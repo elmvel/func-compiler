@@ -30,6 +30,7 @@ enum class TokenType
     Dot,
 
     // Keywords
+    Let,
     End,
     If,
     Then,

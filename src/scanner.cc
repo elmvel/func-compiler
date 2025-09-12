@@ -19,6 +19,7 @@ std::vector<std::pair<std::string, TokenType>> g_token_symbols = {
 };
 
 std::vector<std::pair<std::string, TokenType>> g_token_keywords = {
+    {"let", TokenType::Let},
     {"end", TokenType::End},
     {"if", TokenType::If},
     {"then", TokenType::Then},

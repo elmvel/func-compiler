@@ -39,6 +39,7 @@ auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ct
   case TokenType::Arrow:    name="Arrow";    break;
   case TokenType::And:      name="And";      break;
   case TokenType::Dot:      name="Dot";      break;
+  case TokenType::Let:      name="Let";      break;
   case TokenType::End:      name="End";      break;
   case TokenType::If:       name="If";       break;
   case TokenType::Then:     name="Then";     break;

@@ -1,4 +1,4 @@
 (* Sums two integers together *)
-add [a, b] :=
+let add [a, b] :=
     a + b + 100 + "hi" + "" + "Hello World!"
 end
