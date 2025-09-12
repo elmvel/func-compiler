@@ -1,0 +1,4 @@
+(* Sums two integers together *)
+add [a, b] :=
+    a + b + 100 + "hi" + "" + "Hello World!"
+end
