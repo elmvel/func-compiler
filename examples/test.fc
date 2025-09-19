@@ -1,4 +1,8 @@
 (* Sums two integers together *)
 let add [a, b] :=
-    a + b + 100 + "hi" + "" + "Hello World!"
+    10
+end
+
+let sub[b, c] :=
+    7
 end

@@ -1,3 +1,4 @@
+#include <cassert>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -6,48 +7,9 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
+#include "common.hh"
 #include "scanner.hh"
-
-// Fmt support for TokenType
-
-template <> struct fmt::formatter<TokenType>: formatter<std::string_view> {
-  // parse is inherited from formatter<string_view>.
-
-  auto format(TokenType c, format_context& ctx) const
-    -> format_context::iterator;
-};
-
-// Possible X-Macro?
-// Might ruin "LSP"
-auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ctx) const
-    -> format_context::iterator {
-  string_view name = "unknown";
-  switch (c) {
-  case TokenType::Id:       name="Id";       break;
-  case TokenType::Integer:  name="Integer";  break;
-  case TokenType::String:   name="String";   break;
-  case TokenType::LParen:   name="LParen";   break;
-  case TokenType::RParen:   name="RParen";   break;
-  case TokenType::LBracket: name="LBracket"; break;
-  case TokenType::RBracket: name="RBracket"; break;
-  case TokenType::Comma:    name="Comma";    break;
-  case TokenType::Assign:   name="Assign";   break;
-  case TokenType::Add:      name="Add";      break;
-  case TokenType::Sub:      name="Sub";      break;
-  case TokenType::Mul:      name="Mul";      break;
-  case TokenType::Div:      name="Div";      break;
-  case TokenType::Arrow:    name="Arrow";    break;
-  case TokenType::And:      name="And";      break;
-  case TokenType::Dot:      name="Dot";      break;
-  case TokenType::Let:      name="Let";      break;
-  case TokenType::End:      name="End";      break;
-  case TokenType::If:       name="If";       break;
-  case TokenType::Then:     name="Then";     break;
-  case TokenType::Else:     name="Else";     break;
-  case TokenType::Match:    name="Match";    break;
-  }
-  return formatter<std::string_view>::format(name, ctx);
-}
+#include "parser.hh"
 
 std::optional<std::string> read_file(const std::string& file_path)
 {
@@ -81,6 +43,62 @@ void trace_token(Scanner& scanner, const std::optional<TokenType>& token)
     }
 }
 
+template <typename... Args>
+void print_indented(int level, std::string_view format_str, Args&&... args) {
+    fmt::print("{:{}}", "", level * 4);
+    fmt::print(format_str, std::forward<Args>(args)...);
+}
+
+std::string trace_params(TreeNode *params)
+{
+    std::string text = "[";
+    TreeNode *first = params;
+    while (first != nullptr) {
+        text.append(std::get<std::string>(first->attr));
+        if (first->next() != nullptr) {
+            text.append(", ");
+        }
+        first = first->next();
+    }
+    text.append("]");
+
+    return text;
+}
+
+// Questionable Performance
+void trace_tree(TreeNode *root, int level = 0)
+{
+    if (!root) return;
+    if (root->kind == NodeKind::Binding) {
+        if (root->right() != nullptr) {
+            std::string params = trace_params(root->right());
+            std::string text = fmt::format("Let({}, {})\n", std::get<std::string>(root->attr), params);
+            print_indented(level, text);
+        } else {
+            std::string text = fmt::format("Let({})\n", std::get<std::string>(root->attr));
+            print_indented(level, text);
+        }
+        trace_tree(root->left(), level + 1);
+        fmt::println("");
+        trace_tree(root->next());
+    } else {
+        assert(root->expr_kind.has_value());
+        switch (root->expr_kind.value()) {
+            case ExprKind::Integer: {
+                std::string text = fmt::format("{}", std::get<int>(root->attr));
+                print_indented(level, text);
+            } break;
+            default: {
+                fmt::println("error: unsupported trace kind");
+                abort();
+            } break;
+        }
+    }
+}
+
+// Smart pointers
+// Visitor pattern
+
 int main()
 {
     std::string file_path = "examples/test.fc";
@@ -92,6 +110,7 @@ int main()
     fmt::println("========================================");
     fmt::println("File Content:\n{}", *file_content);
 
+#if 0
     fmt::println("========================================");
     fmt::println("                Scanning                ");
     fmt::println("========================================");
@@ -102,31 +121,18 @@ int main()
             trace_token(scanner, token);
         }
     }
+#endif
+
     fmt::println("========================================");
-    fmt::println("             Save & Restore             ");
+    fmt::println("                 Parsing                ");
     fmt::println("========================================");
     {
         Scanner scanner {*file_content};
-        std::optional<TokenType> token = {};
-        size_t point = scanner.save();
-
-        fmt::print("1: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
-
-        fmt::print("2: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
-
-        fmt::print("3: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
-
-        fmt::println("Restoring...");
-        scanner.restore(point);
-
-        fmt::print("4: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
+        Parser parser {scanner};
+        TreeNode *root = parser.parse_program();
+        trace_tree(root);
     }
 }
+
+// compilers
+// cs435!
