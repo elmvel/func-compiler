@@ -11,6 +11,9 @@
 #include "scanner.hh"
 #include "parser.hh"
 
+// #define ONLY_SCAN
+#define ONLY_PARSE
+
 std::optional<std::string> read_file(const std::string& file_path)
 {
     std::ifstream file(file_path);
@@ -49,55 +52,115 @@ void print_indented(int level, std::string_view format_str, Args&&... args) {
     fmt::print(format_str, std::forward<Args>(args)...);
 }
 
-std::string trace_params(TreeNode *params)
-{
-    std::string text = "[";
-    TreeNode *first = params;
-    while (first != nullptr) {
-        text.append(std::get<std::string>(first->attr));
-        if (first->next() != nullptr) {
-            text.append(", ");
-        }
-        first = first->next();
-    }
-    text.append("]");
-
-    return text;
-}
-
-// Questionable Performance
-void trace_tree(TreeNode *root, int level = 0)
-{
-    if (!root) return;
-    if (root->kind == NodeKind::Binding) {
-        if (root->right() != nullptr) {
-            std::string params = trace_params(root->right());
-            std::string text = fmt::format("Let({}, {})\n", std::get<std::string>(root->attr), params);
-            print_indented(level, text);
-        } else {
-            std::string text = fmt::format("Let({})\n", std::get<std::string>(root->attr));
-            print_indented(level, text);
-        }
-        trace_tree(root->left(), level + 1);
-        fmt::println("");
-        trace_tree(root->next());
-    } else {
-        assert(root->expr_kind.has_value());
-        switch (root->expr_kind.value()) {
-            case ExprKind::Integer: {
-                std::string text = fmt::format("{}", std::get<int>(root->attr));
-                print_indented(level, text);
-            } break;
-            default: {
-                fmt::println("error: unsupported trace kind");
-                abort();
-            } break;
-        }
-    }
-}
-
 // Smart pointers
 // Visitor pattern
+
+struct TreeTraceVisitor : ITreeVisitor
+{
+    virtual void visit(TreeSeqNode *node)
+    {
+        std::string local_text = "";
+        for (auto& child : node->children) {
+            child->accept(this);
+            local_text.append(text);
+            local_text.append("\n\n");
+        }
+        text = local_text;
+    }
+
+    virtual void visit(TreeListNode *node)
+    {
+        std::string local_text = "";
+        local_text.push_back('[');
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            if (i != 0) {
+                local_text.append(", ");
+            }
+            node->children[i]->accept(this);
+            local_text.append(text);
+        }
+        local_text.push_back(']');
+        text = local_text;
+    }
+
+    virtual void visit(TreeBindingNode *node)
+    {
+        std::string local_text = "Let(";
+
+        local_text.append(node->id);
+        if (node->params != nullptr) {
+            local_text.append(", ");
+            node->params->accept(this);
+            local_text.append(text);
+        }
+        local_text.append(")\n");
+
+        level += 1;
+        for (int i = 0; i < level; ++i) {
+            local_text.append("    ");
+        }
+        node->body->accept(this);
+        local_text.append(text);
+        level -= 1;
+
+        if (node->next != nullptr) {
+            local_text.append(",\n");
+            for (int i = 0; i < level; ++i) {
+                local_text.append("    ");
+            }
+            node->next->accept(this);
+            local_text.append(text);
+        }
+
+        text = local_text;
+    }
+
+    virtual void visit(TreeBinopNode *node)
+    {
+        std::string local_text = fmt::format("{}(", node->op);
+        node->lhs->accept(this);
+        local_text.append(text);
+        local_text.append(", ");
+        node->rhs->accept(this);
+        local_text.append(text);
+        local_text.append(")");
+        
+        text = local_text;
+    }
+
+    virtual void visit(TreeApplyNode *node)
+    {
+        std::string local_text = "Apply(";
+
+        node->func->accept(this);
+        local_text.append(text);
+        local_text.append(", ");
+        node->arg->accept(this);
+        local_text.append(text);
+        local_text.append(")");
+        
+        text = local_text;
+    }
+
+    virtual void visit(TreeIdentNode *node)
+    {
+        text = node->name;
+    }
+
+    virtual void visit(TreeIntegerNode *node)
+    {
+        std::string local_text = fmt::format("{}", node->value);
+        text = local_text;
+    }
+
+    virtual void visit(TreeStringNode *node)
+    {
+        text = fmt::format("\"{}\"", node->text);
+    }
+
+    std::string text;
+    int level = 0;
+};
 
 int main()
 {
@@ -110,7 +173,7 @@ int main()
     fmt::println("========================================");
     fmt::println("File Content:\n{}", *file_content);
 
-#if 0
+#if defined(ONLY_SCAN)
     fmt::println("========================================");
     fmt::println("                Scanning                ");
     fmt::println("========================================");
@@ -121,17 +184,24 @@ int main()
             trace_token(scanner, token);
         }
     }
-#endif
-
+#elif defined (ONLY_PARSE)
     fmt::println("========================================");
     fmt::println("                 Parsing                ");
     fmt::println("========================================");
     {
         Scanner scanner {*file_content};
         Parser parser {scanner};
+
         TreeNode *root = parser.parse_program();
-        trace_tree(root);
+        TreeTraceVisitor visitor;
+        root->accept(&visitor);
+        fmt::println("{}", visitor.text);
+
+        delete root;
     }
+#else
+    fmt::println("TODO: Full pass of compiler");
+#endif
 }
 
 // compilers

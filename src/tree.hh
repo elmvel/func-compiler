@@ -5,6 +5,9 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
+
+#include "scanner.hh"
 
 /*
   Since so many of these will be created,
@@ -21,65 +24,194 @@ struct SourceLocation
     int colno;
 };
 
-enum class NodeKind
+struct TreeNode;
+struct TreeSeqNode;
+struct TreeListNode;
+struct TreeBindingNode;
+struct TreeBinopNode;
+struct TreeApplyNode;
+struct TreeIdentNode;
+struct TreeIntegerNode;
+struct TreeStringNode;
+
+struct ITreeVisitor
 {
-    Binding,
-    Expr
+    virtual void visit(TreeSeqNode *node) = 0;
+    virtual void visit(TreeListNode *node) = 0;
+    virtual void visit(TreeBindingNode *node) = 0;
+    virtual void visit(TreeBinopNode *node) = 0;
+    virtual void visit(TreeApplyNode *node) = 0;
+    virtual void visit(TreeIdentNode *node) = 0;
+    virtual void visit(TreeIntegerNode *node) = 0;
+    virtual void visit(TreeStringNode *node) = 0;
 };
-
-enum class ExprKind
-{
-    // Primitives
-    Ident,
-    Integer,
-    String,
-
-    // Arithmetic
-    Add,
-    Sub,
-    Mul,
-    Div,
-
-    // Functions
-    Funcall,
-
-    // List
-    List,
-    Cons,
-
-    // Branching
-    IfElse,
-    Match,
-};
-
-#define TREE_MAX_CHILDREN 3
 
 struct TreeNode
 {
-    using value = TreeNode;
-    using pointer = value*;
-    using reference = value&;
-    using attr_type = std::variant<int, std::string>;
+    virtual ~TreeNode()
+    {}
 
-    TreeNode()
-        : expr_kind({}), attr({})
-    {
-        std::fill(children, children+TREE_MAX_CHILDREN, nullptr);
-    }
-    
-    NodeKind kind;
-    std::optional<ExprKind> expr_kind;
-    attr_type attr;
-    TreeNode *children[TREE_MAX_CHILDREN];
-
-    pointer& left();
-    pointer& right();
-    pointer& middle();
-    pointer& next();
+    virtual void accept(ITreeVisitor *visitor) = 0;
 };
 
-// Very unsafe, will need to consider better allocation options
-TreeNode *new_binding_node(const std::string& id, TreeNode *body, TreeNode *params = nullptr);
-TreeNode *new_expr_node(ExprKind expr_kind, const TreeNode::attr_type& attr);
+struct TreeSeqNode : TreeNode
+{
+    TreeSeqNode(const std::vector<TreeNode *> children)
+        : children(children)
+    {}
+
+    virtual ~TreeSeqNode()
+    {
+        for (auto& child : children) {
+            delete child;
+        }
+    }
+    
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    std::vector<TreeNode *> children;
+};
+
+struct TreeListNode : TreeNode
+{
+    TreeListNode(const std::vector<TreeNode *> children)
+        : children(children)
+    {}
+
+    virtual ~TreeListNode()
+    {
+        for (auto& child : children) {
+            delete child;
+        }
+    }
+    
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    std::vector<TreeNode *> children;
+};
+
+struct TreeBindingNode : TreeNode
+{
+    TreeBindingNode(const std::string& id, TreeNode *body, TreeNode *params = nullptr)
+        : id(id), body(body), params(params), next(nullptr)
+    {}
+    
+    virtual ~TreeBindingNode()
+    {
+        delete body;
+        delete params;
+        delete next;
+    }
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+    
+    std::string id;
+    TreeNode *body;
+    TreeNode *params;
+    TreeNode *next;
+};
+
+struct TreeBinopNode : TreeNode
+{
+    TreeBinopNode(TokenType op, TreeNode *lhs, TreeNode *rhs)
+        : op(op), lhs(lhs), rhs(rhs)
+    {}
+
+    virtual ~TreeBinopNode()
+    {
+        delete lhs;
+        delete rhs;
+    }
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+    
+    TokenType op;
+    TreeNode *lhs;
+    TreeNode *rhs;
+};
+
+struct TreeApplyNode : TreeNode
+{
+    TreeApplyNode(TreeNode *func, TreeNode *arg)
+        : func(func), arg(arg)
+    {}
+    
+    virtual ~TreeApplyNode()
+    {
+        delete func;
+        delete arg;
+    }
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    TreeNode *func;
+    TreeNode *arg;
+};
+
+struct TreeIdentNode : TreeNode
+{
+    TreeIdentNode(const std::string& name)
+        : name(name)
+    {}
+
+    virtual ~TreeIdentNode()
+    {}
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+    
+    std::string name;
+};
+
+struct TreeIntegerNode : TreeNode
+{
+    TreeIntegerNode(int value)
+        : value(value)
+    {}
+
+    virtual ~TreeIntegerNode()
+    {}
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+    
+    int value;
+};
+
+struct TreeStringNode : TreeNode
+{
+    TreeStringNode(const std::string& text)
+        : text(text)
+    {}
+
+    virtual ~TreeStringNode()
+    {}
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+    
+    std::string text;
+};
 
 #endif // TREE_H_
