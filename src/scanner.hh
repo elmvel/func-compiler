@@ -38,6 +38,15 @@ enum class TokenType
     Match,
 };
 
+// Fmt support for TokenType
+
+template <> struct fmt::formatter<TokenType>: formatter<std::string_view> {
+  // parse is inherited from formatter<string_view>.
+
+  auto format(TokenType c, format_context& ctx) const
+    -> format_context::iterator;
+};
+
 enum class ScanState
 {
     Start, LexIdent, LexInt, LexString, LexComment, Done, Error

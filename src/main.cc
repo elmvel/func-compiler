@@ -1,3 +1,4 @@
+#include <cassert>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -6,48 +7,12 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
+#include "common.hh"
 #include "scanner.hh"
+#include "parser.hh"
 
-// Fmt support for TokenType
-
-template <> struct fmt::formatter<TokenType>: formatter<std::string_view> {
-  // parse is inherited from formatter<string_view>.
-
-  auto format(TokenType c, format_context& ctx) const
-    -> format_context::iterator;
-};
-
-// Possible X-Macro?
-// Might ruin "LSP"
-auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ctx) const
-    -> format_context::iterator {
-  string_view name = "unknown";
-  switch (c) {
-  case TokenType::Id:       name="Id";       break;
-  case TokenType::Integer:  name="Integer";  break;
-  case TokenType::String:   name="String";   break;
-  case TokenType::LParen:   name="LParen";   break;
-  case TokenType::RParen:   name="RParen";   break;
-  case TokenType::LBracket: name="LBracket"; break;
-  case TokenType::RBracket: name="RBracket"; break;
-  case TokenType::Comma:    name="Comma";    break;
-  case TokenType::Assign:   name="Assign";   break;
-  case TokenType::Add:      name="Add";      break;
-  case TokenType::Sub:      name="Sub";      break;
-  case TokenType::Mul:      name="Mul";      break;
-  case TokenType::Div:      name="Div";      break;
-  case TokenType::Arrow:    name="Arrow";    break;
-  case TokenType::And:      name="And";      break;
-  case TokenType::Dot:      name="Dot";      break;
-  case TokenType::Let:      name="Let";      break;
-  case TokenType::End:      name="End";      break;
-  case TokenType::If:       name="If";       break;
-  case TokenType::Then:     name="Then";     break;
-  case TokenType::Else:     name="Else";     break;
-  case TokenType::Match:    name="Match";    break;
-  }
-  return formatter<std::string_view>::format(name, ctx);
-}
+// #define ONLY_SCAN
+#define ONLY_PARSE
 
 std::optional<std::string> read_file(const std::string& file_path)
 {
@@ -81,6 +46,122 @@ void trace_token(Scanner& scanner, const std::optional<TokenType>& token)
     }
 }
 
+template <typename... Args>
+void print_indented(int level, std::string_view format_str, Args&&... args) {
+    fmt::print("{:{}}", "", level * 4);
+    fmt::print(format_str, std::forward<Args>(args)...);
+}
+
+// Smart pointers
+// Visitor pattern
+
+struct TreeTraceVisitor : ITreeVisitor
+{
+    virtual void visit(TreeSeqNode *node)
+    {
+        std::string local_text = "";
+        for (auto& child : node->children) {
+            child->accept(this);
+            local_text.append(text);
+            local_text.append("\n\n");
+        }
+        text = local_text;
+    }
+
+    virtual void visit(TreeListNode *node)
+    {
+        std::string local_text = "";
+        local_text.push_back('[');
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            if (i != 0) {
+                local_text.append(", ");
+            }
+            node->children[i]->accept(this);
+            local_text.append(text);
+        }
+        local_text.push_back(']');
+        text = local_text;
+    }
+
+    virtual void visit(TreeBindingNode *node)
+    {
+        std::string local_text = "Let(";
+
+        local_text.append(node->id);
+        if (node->params != nullptr) {
+            local_text.append(", ");
+            node->params->accept(this);
+            local_text.append(text);
+        }
+        local_text.append(")\n");
+
+        level += 1;
+        for (int i = 0; i < level; ++i) {
+            local_text.append("    ");
+        }
+        node->body->accept(this);
+        local_text.append(text);
+        level -= 1;
+
+        if (node->next != nullptr) {
+            local_text.append(",\n");
+            for (int i = 0; i < level; ++i) {
+                local_text.append("    ");
+            }
+            node->next->accept(this);
+            local_text.append(text);
+        }
+
+        text = local_text;
+    }
+
+    virtual void visit(TreeBinopNode *node)
+    {
+        std::string local_text = fmt::format("{}(", node->op);
+        node->lhs->accept(this);
+        local_text.append(text);
+        local_text.append(", ");
+        node->rhs->accept(this);
+        local_text.append(text);
+        local_text.append(")");
+        
+        text = local_text;
+    }
+
+    virtual void visit(TreeApplyNode *node)
+    {
+        std::string local_text = "Apply(";
+
+        node->func->accept(this);
+        local_text.append(text);
+        local_text.append(", ");
+        node->arg->accept(this);
+        local_text.append(text);
+        local_text.append(")");
+        
+        text = local_text;
+    }
+
+    virtual void visit(TreeIdentNode *node)
+    {
+        text = node->name;
+    }
+
+    virtual void visit(TreeIntegerNode *node)
+    {
+        std::string local_text = fmt::format("{}", node->value);
+        text = local_text;
+    }
+
+    virtual void visit(TreeStringNode *node)
+    {
+        text = fmt::format("\"{}\"", node->text);
+    }
+
+    std::string text;
+    int level = 0;
+};
+
 int main()
 {
     std::string file_path = "examples/test.fc";
@@ -92,6 +173,7 @@ int main()
     fmt::println("========================================");
     fmt::println("File Content:\n{}", *file_content);
 
+#if defined(ONLY_SCAN)
     fmt::println("========================================");
     fmt::println("                Scanning                ");
     fmt::println("========================================");
@@ -102,31 +184,26 @@ int main()
             trace_token(scanner, token);
         }
     }
+#elif defined (ONLY_PARSE)
     fmt::println("========================================");
-    fmt::println("             Save & Restore             ");
+    fmt::println("                 Parsing                ");
     fmt::println("========================================");
     {
         Scanner scanner {*file_content};
-        std::optional<TokenType> token = {};
-        size_t point = scanner.save();
+        Parser parser {scanner};
 
-        fmt::print("1: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
+        TreeNode *root = parser.parse_program();
+        TreeTraceVisitor visitor;
+        root->accept(&visitor);
+        fmt::println("{}", visitor.text);
 
-        fmt::print("2: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
-
-        fmt::print("3: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
-
-        fmt::println("Restoring...");
-        scanner.restore(point);
-
-        fmt::print("4: ");
-        token = scanner.next_token();
-        trace_token(scanner, token);
+        delete root;
     }
+#else
+    fmt::println("TODO: Full pass of compiler");
+#endif
+    return 0;
 }
+
+// compilers
+// cs435!
