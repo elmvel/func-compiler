@@ -202,6 +202,7 @@ int main()
 #else
     fmt::println("TODO: Full pass of compiler");
 #endif
+    return 0;
 }
 
 // compilers
