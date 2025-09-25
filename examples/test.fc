@@ -42,3 +42,12 @@ end
 let main [args] :=
     print "Hello World"
 end
+
+(*
+Potential syntax for type annotations
+
+let scale: int -> int [x] :=
+    let scalar: int := 2,
+    x * scalar
+end
+*)
