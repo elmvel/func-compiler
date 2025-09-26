@@ -10,9 +10,11 @@
 #include "common.hh"
 #include "scanner.hh"
 #include "parser.hh"
+#include "sema.hh"
 
 // #define ONLY_SCAN
-#define ONLY_PARSE
+// #define ONLY_PARSE
+#define ONLY_SEMA
 
 std::optional<std::string> read_file(const std::string& file_path)
 {
@@ -196,6 +198,20 @@ int main()
         TreeTraceVisitor visitor;
         root->accept(&visitor);
         fmt::println("{}", visitor.text);
+
+        delete root;
+    }
+#elif defined (ONLY_SEMA)
+    fmt::println("========================================");
+    fmt::println("            Semantic Analysis           ");
+    fmt::println("========================================");
+    {
+        Scanner scanner {*file_content};
+        Parser parser {scanner};
+        TreeNode *root = parser.parse_program();
+
+        TreeSemaVisitor visitor;
+        root->accept(&visitor);
 
         delete root;
     }

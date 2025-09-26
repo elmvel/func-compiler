@@ -24,6 +24,19 @@ struct SourceLocation
     int colno;
 };
 
+// TODO: might move this to an attributes header instead
+
+enum class Type
+{
+    Integer,
+    String,
+};
+
+template <> struct fmt::formatter<Type>: formatter<std::string_view> {
+  auto format(Type c, format_context& ctx) const
+    -> format_context::iterator;
+};
+
 struct TreeNode;
 struct TreeSeqNode;
 struct TreeListNode;
@@ -118,6 +131,9 @@ struct TreeBindingNode : TreeNode
     TreeNode *body;
     TreeNode *params;
     TreeNode *next;
+
+    // Attributes
+    std::optional<Type> attr_type;
 };
 
 struct TreeBinopNode : TreeNode
@@ -140,6 +156,9 @@ struct TreeBinopNode : TreeNode
     TokenType op;
     TreeNode *lhs;
     TreeNode *rhs;
+
+    // Attributes
+    std::optional<Type> attr_type;
 };
 
 struct TreeApplyNode : TreeNode
@@ -161,6 +180,9 @@ struct TreeApplyNode : TreeNode
 
     TreeNode *func;
     TreeNode *arg;
+
+    // Attributes
+    std::optional<Type> attr_type;
 };
 
 struct TreeIdentNode : TreeNode
@@ -178,6 +200,9 @@ struct TreeIdentNode : TreeNode
     }
     
     std::string name;
+
+    // Attributes
+    std::optional<Type> attr_type;
 };
 
 struct TreeIntegerNode : TreeNode
@@ -195,6 +220,9 @@ struct TreeIntegerNode : TreeNode
     }
     
     int value;
+
+    // Attributes
+    std::optional<Type> attr_type;
 };
 
 struct TreeStringNode : TreeNode
@@ -212,6 +240,9 @@ struct TreeStringNode : TreeNode
     }
     
     std::string text;
+
+    // Attributes
+    std::optional<Type> attr_type;
 };
 
 #endif // TREE_H_
