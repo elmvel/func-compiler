@@ -1,5 +1,5 @@
-#ifndef PARSER_H_
-#define PARSER_H_
+#ifndef PARSER_HH_
+#define PARSER_HH_
 
 #include <functional>
 #include <optional>
@@ -29,6 +29,7 @@ public:
     [[nodiscard]] TreeNode *parse_body();
     [[nodiscard]] TreeNode *parse_expr(int precedence);
     [[nodiscard]] TreeNode *parse_primary_expr(bool apply);
+    [[nodiscard]] Type parse_type();
 private:
     void match(TokenType type);
     void next_token();
@@ -49,4 +50,4 @@ private:
     std::optional<TokenType> m_head_token;
 };
 
-#endif // PARSER_H_
+#endif // PARSER_HH_

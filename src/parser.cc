@@ -32,8 +32,8 @@ TreeNode *Parser::parse_program()
 }
 
 /*
-<binding> ::= LET <id> <param-list> ":=" <body> END
-            | LET <id> ":=" <expr>
+<binding> ::= LET <id> [":" <type>] <param-list> ":=" <body> END
+            | LET <id> [":" <type>] ":=" <expr>
  */
 TreeNode *Parser::parse_binding()
 {
@@ -44,6 +44,13 @@ TreeNode *Parser::parse_binding()
     std::string name = match(TokenType::Id, [&](){
         return m_scanner.lexeme();
     });
+
+    std::optional<Type> type_hint;
+    if (has_token(TokenType::Colon)) {
+        next_token();
+
+        type_hint = parse_type();
+    }
 
     TreeNode *params = NULL;
     if (has_token(TokenType::LBracket)) {
@@ -56,7 +63,11 @@ TreeNode *Parser::parse_binding()
     TreeNode *body = parse_body();
     if (require_end) match(TokenType::End);
 
-    return new TreeBindingNode(name, body, params);
+    auto node = new TreeBindingNode(name, body, params);
+    if (type_hint.has_value()) {
+        node->attr_type = *type_hint;
+    }
+    return node;
 }
 
 /*
@@ -78,26 +89,40 @@ TreeNode *Parser::parse_param_list()
 }
 
 /*
-<param-seq>  ::= ID "," <param-seq> | ID
+<param-seq>  ::= ID [":" <type>] "," <param-seq> | ID
  */
 TreeNode *Parser::parse_param_seq()
 {
     std::vector<TreeNode *> nodes;
     
-    match(TokenType::Id, [&](){
-        TreeNode *ident = new TreeIdentNode(m_scanner.lexeme());
-        nodes.push_back(ident);
-        return VOID_MATCH;
+    TreeNode *ident = match(TokenType::Id, [&](){
+        return new TreeIdentNode(m_scanner.lexeme());
     });
 
-    while (has_token(TokenType::Comma)) {
-        match(m_head_token.value());
+    if (has_token(TokenType::Colon)) {
+        next_token();
 
-        match(TokenType::Id, [&](){
-            TreeNode *ident = new TreeIdentNode(m_scanner.lexeme());
-            nodes.push_back(ident);
-            return VOID_MATCH;
+        Type type = parse_type();
+        static_cast<TreeIdentNode *>(ident)->attr_type = type;
+    }
+
+    nodes.push_back(ident);
+
+    while (has_token(TokenType::Comma)) {
+        next_token();
+
+        TreeNode *ident = match(TokenType::Id, [&](){
+            return new TreeIdentNode(m_scanner.lexeme());
         });
+
+        if (has_token(TokenType::Colon)) {
+            next_token();
+
+            Type type = parse_type();
+            static_cast<TreeIdentNode *>(ident)->attr_type = type;
+        }
+
+        nodes.push_back(ident);
     }
 
     return new TreeListNode(nodes);
@@ -193,6 +218,27 @@ TreeNode *Parser::parse_primary_expr(bool apply)
             abort();
         } else {
             fmt::println("Could not parse an expression: Head token = {}", *m_head_token);
+            abort();
+        }
+    }
+}
+
+Type Parser::parse_type()
+{
+    if (has_token(TokenType::TyInt)) {
+        next_token();
+
+        return Type::Integer;
+    } else if (has_token(TokenType::TyString)) {
+        next_token();
+
+        return Type::String;
+    } else {
+        if (!m_head_token.has_value()) {
+            fmt::println("Could not parse a type: EOF.");
+            abort();
+        } else {
+            fmt::println("Could not parse a type: Head token = {}", *m_head_token);
             abort();
         }
     }

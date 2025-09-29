@@ -16,6 +16,7 @@ std::vector<std::pair<std::string, TokenType>> g_token_symbols = {
     {"/", TokenType::Div},
     {"&", TokenType::And},
     {".", TokenType::Dot},
+    {":", TokenType::Colon},
 };
 
 std::vector<std::pair<std::string, TokenType>> g_token_keywords = {
@@ -25,11 +26,15 @@ std::vector<std::pair<std::string, TokenType>> g_token_keywords = {
     {"then", TokenType::Then},
     {"else", TokenType::Else},
     {"match", TokenType::Match},
+
+    // Type Keywords
+    {"int", TokenType::TyInt},
+    {"string", TokenType::TyString},
 };
 
 auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ctx) const
     -> format_context::iterator {
-  string_view name = "unknown";
+  string_view name = "<unknown>";
   switch (c) {
   case TokenType::Id:       name="Id";       break;
   case TokenType::Integer:  name="Integer";  break;
@@ -47,12 +52,15 @@ auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ct
   case TokenType::Arrow:    name="Arrow";    break;
   case TokenType::And:      name="And";      break;
   case TokenType::Dot:      name="Dot";      break;
+  case TokenType::Colon:    name="Colon";    break;
   case TokenType::Let:      name="Let";      break;
   case TokenType::End:      name="End";      break;
   case TokenType::If:       name="If";       break;
   case TokenType::Then:     name="Then";     break;
   case TokenType::Else:     name="Else";     break;
   case TokenType::Match:    name="Match";    break;
+  case TokenType::TyInt:    name="int";      break;
+  case TokenType::TyString: name="string";   break;
   }
   return formatter<std::string_view>::format(name, ctx);
 }

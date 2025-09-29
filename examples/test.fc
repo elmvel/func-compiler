@@ -1,53 +1,21 @@
-(* Sums two integers together *)
-let foo [a, b] :=
-    10
+let sum [a: int, b: int] :=
+    a + b
 end
 
-let bar [b, c] :=
-    10 * 4 - 32
+let quo [] :=
+    sum 1 2
 end
 
-let baz [x, y] :=
-    5 * 6 + 10 * 2 + 30 + 27 + 16 + 3 * 4
+let xd: int := 64
+
+let A [] :=
+    xd + 1
 end
 
-let parentest [] :=
-    (3 + 4) * (5 + 6)
+let B [] :=
+    sum xd 1
 end
 
-let apply [] :=
-    f x y z
+let C [] :=
+    sum 1 "2"
 end
-
-let complicated [] :=
-    let inner := f 10 12 13,
-    inner * 100
-end
-
-(* Here are examples from lang.txt *)
-
-let bar [x, y] :=
-    let a := 1,
-    let b := 2,
-    (a + x) + (b + y)
-end
-
-let helpedfn [n] :=
-    let helper [n] :=
-        n * 15
-    end,
-    helper n + 5
-end
-
-let main [args] :=
-    print "Hello World"
-end
-
-(*
-Potential syntax for type annotations
-
-let scale: int -> int [x] :=
-    let scalar: int := 2,
-    x * scalar
-end
-*)

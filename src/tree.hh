@@ -1,5 +1,5 @@
-#ifndef TREE_H_
-#define TREE_H_
+#ifndef TREE_HH_
+#define TREE_HH_
 
 #include <optional>
 #include <string>
@@ -39,6 +39,7 @@ template <> struct fmt::formatter<Type>: formatter<std::string_view> {
 
 struct TreeNode;
 struct TreeSeqNode;
+struct TreeParamsNode;
 struct TreeListNode;
 struct TreeBindingNode;
 struct TreeBinopNode;
@@ -50,6 +51,7 @@ struct TreeStringNode;
 struct ITreeVisitor
 {
     virtual void visit(TreeSeqNode *node) = 0;
+    virtual void visit(TreeParamsNode *node) = 0;
     virtual void visit(TreeListNode *node) = 0;
     virtual void visit(TreeBindingNode *node) = 0;
     virtual void visit(TreeBinopNode *node) = 0;
@@ -74,6 +76,27 @@ struct TreeSeqNode : TreeNode
     {}
 
     virtual ~TreeSeqNode()
+    {
+        for (auto& child : children) {
+            delete child;
+        }
+    }
+    
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    std::vector<TreeNode *> children;
+};
+
+struct TreeParamsNode : TreeNode
+{
+    TreeParamsNode(const std::vector<TreeNode *> children)
+        : children(children)
+    {}
+
+    virtual ~TreeParamsNode()
     {
         for (auto& child : children) {
             delete child;
@@ -245,4 +268,4 @@ struct TreeStringNode : TreeNode
     std::optional<Type> attr_type;
 };
 
-#endif // TREE_H_
+#endif // TREE_HH_

@@ -1,5 +1,5 @@
-#ifndef COMMON_H_
-#define COMMON_H_
+#ifndef COMMON_HH_
+#define COMMON_HH_
 
 #define TODOF()                                 \
     do {                                        \
@@ -127,4 +127,4 @@ namespace dwg
 //     return 0;
 // }
 
-#endif // COMMON_H_
+#endif // COMMON_HH_

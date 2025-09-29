@@ -10,6 +10,7 @@
 #include "common.hh"
 #include "scanner.hh"
 #include "parser.hh"
+#include "symtab.hh"
 #include "sema.hh"
 
 // #define ONLY_SCAN
@@ -67,6 +68,21 @@ struct TreeTraceVisitor : ITreeVisitor
             local_text.append(text);
             local_text.append("\n\n");
         }
+        text = local_text;
+    }
+
+    virtual void visit(TreeParamsNode *node)
+    {
+        std::string local_text = "";
+        local_text.push_back('[');
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            if (i != 0) {
+                local_text.append(", ");
+            }
+            node->children[i]->accept(this);
+            local_text.append(text);
+        }
+        local_text.push_back(']');
         text = local_text;
     }
 
@@ -210,8 +226,15 @@ int main()
         Parser parser {scanner};
         TreeNode *root = parser.parse_program();
 
-        TreeSemaVisitor visitor;
-        root->accept(&visitor);
+        // This does probably walk more of the tree than necessary,
+        // but oh well...
+        TreeSymtabVisitor visitor_symtab;
+        root->accept(&visitor_symtab);
+
+        TreeSemaVisitor visitor_sema(visitor_symtab.table);
+        root->accept(&visitor_sema);
+
+        fmt::println("Passed Semantic Analysis!");
 
         delete root;
     }
