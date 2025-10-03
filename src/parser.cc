@@ -214,11 +214,9 @@ TreeNode *Parser::parse_primary_expr(bool apply)
         });
     } else {
         if (!m_head_token.has_value()) {
-            fmt::println("Could not parse an expression: EOF.");
-            abort();
+            COMPILER_ERROR_TERM("Could not parse an expression: EOF.");
         } else {
-            fmt::println("Could not parse an expression: Head token = {}", *m_head_token);
-            abort();
+            COMPILER_ERROR_TERM("Could not parse an expression: Head token = {}", *m_head_token);
         }
     }
 }
@@ -235,11 +233,9 @@ Type *Parser::parse_type_primitive()
         return new Type(TypePrimitive::String);
     } else {
         if (!m_head_token.has_value()) {
-            fmt::println("Could not parse a type: EOF.");
-            abort();
+            COMPILER_ERROR_TERM("Could not parse a type: EOF.");
         } else {
-            fmt::println("Could not parse a type: Head token = {}", *m_head_token);
-            abort();
+            COMPILER_ERROR_TERM("Could not parse a type: Head token = {}", *m_head_token);
         }
     }
 }
@@ -266,14 +262,11 @@ void Parser::match(TokenType type)
         if (m_head_token.value() == type) {
             next_token();
         } else {
-            fmt::println("ERROR: Parser wanted to match a token but got {}.", type);
-            fmt::println("TODO: Improve error handling within parser.");
-            abort();
+            // TODO: allow for error recovery in some cases if time allows
+            COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got {}.", type);
         }
     } else {
-        fmt::println("ERROR: Parser wanted to match a token but got EOF.");
-        fmt::println("TODO: Improve error handling within parser.");
-        abort();
+        COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got EOF.");
     }
 }
 
@@ -291,11 +284,9 @@ bool Parser::has_token(TokenType type)
 void Parser::require_token(TokenType type)
 {
     if (!m_head_token.has_value()) {
-        fmt::println("error: Expected token type {}, but got EOF", type);
-        abort();
+        COMPILER_ERROR_TERM("error: Expected token type {}, but got EOF", type);
     }
     if (!has_token(type)) {
-        fmt::println("error: Expected token type {}, but got {}", type, *m_head_token);
-        abort();
+        COMPILER_ERROR_TERM("error: Expected token type {}, but got {}", type, *m_head_token);
     }
 }
