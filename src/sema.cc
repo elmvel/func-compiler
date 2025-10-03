@@ -60,14 +60,21 @@ void TreeSemaVisitor::visit(TreeListNode *node)
 
 void TreeSemaVisitor::visit(TreeBindingNode *node)
 {
+    table.enter_scope();
+
+    table.insert(Declaration {node->id, node->attr_type});
+    
     if (node->params != nullptr) {
         node->params->accept(this);
     }
     
     node->body->accept(this);
+
     if (node->next != nullptr) {
         node->next->accept(this);
     }
+
+    table.exit_scope();
 }
 
 void TreeSemaVisitor::visit(TreeBinopNode *node)
@@ -112,11 +119,12 @@ void TreeSemaVisitor::visit(TreeIdentNode *node)
                 if (decl->type.has_value()) {
                     v_type = *decl->type;
                 } else {
-                    fmt::println("error: Binding `{}` has no type!", node->name);
-                    abort();
+                    COMPILER_ERROR("Binding `{}` has no type!", node->name);
+                    valid = false;
                 }
             } else {
-                fmt::println("error: Could not find binding `{}`", node->name);
+                COMPILER_ERROR("Could not find binding `{}`", node->name);
+                valid = false;
             }
         }
     }

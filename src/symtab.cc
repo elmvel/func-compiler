@@ -27,14 +27,12 @@ void TreeSymtabVisitor::visit(TreeListNode *node)
 
 void TreeSymtabVisitor::visit(TreeBindingNode *node)
 {
-    bool exit = false;
+    table.enter_scope();
 
     // Insert this `let x = ...` into the symbol table
     table.insert(Declaration {node->id, node->attr_type});
     
     if (node->params != nullptr) {
-        table.enter_scope();
-        exit = true;
         node->params->accept(this);
     }
 
@@ -44,7 +42,7 @@ void TreeSymtabVisitor::visit(TreeBindingNode *node)
         node->next->accept(this);
     }
 
-    if (exit) table.exit_scope();
+    table.exit_scope();
 }
 
 void TreeSymtabVisitor::visit(TreeBinopNode *node)

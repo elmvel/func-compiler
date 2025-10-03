@@ -84,6 +84,16 @@ public:
     {
         return m_scope_level;
     }
+
+    void trace_table()
+    {
+        for (int i = m_table.size() - 1; i >= 0; --i) {
+            fmt::println("Scope level {}:", i);
+            for (auto& [name, decl] : *m_table[i]) {
+                fmt::println("  Declared name {}", name);
+            }
+        }
+    }
 private: 
     size_t m_scope_level; // 0 for global
     std::vector<std::unique_ptr<ScopeTable>> m_table;

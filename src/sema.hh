@@ -8,7 +8,7 @@
 struct TreeSemaVisitor : ITreeVisitor
 {
     /*
-      For Dr. Z: Took WAYYY too long to find a bug with uninitialized data (v_insert)
+      For Dr. Z: Took way too long to find a bug with uninitialized data (v_insert)
      */
     TreeSemaVisitor(SymbolTable& table)
         : table(std::move(table)), valid(true), v_type(nullptr), v_insert(false)
@@ -25,6 +25,11 @@ struct TreeSemaVisitor : ITreeVisitor
     virtual void visit(TreeStringNode *node);
 
     SymbolTable table;
+    /*
+      For Dr. Z: I like visitor pattern for the flexibility with storing state
+      (VS. the messiness of needing to manage unique return types with recursive analysis functions
+      when I made a compiler in Rust)
+     */
     bool valid;
 
     Type *v_type;
