@@ -80,9 +80,6 @@ struct TreeSeqNode : TreeNode
     std::vector<TreeNode *> children;
 };
 
-/*
-  For Dr. Z: This node..
- */
 struct TreeParamsNode : TreeNode
 {
     TreeParamsNode(const std::vector<TreeNode *> children)

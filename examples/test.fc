@@ -23,3 +23,9 @@ let G: int :=
     5 + 10 + y
 
 let H: int := y + 10
+
+let I: int := sum 1 2
+
+let J: int := mul 2 3
+
+let K: int := sum 1 "2"
