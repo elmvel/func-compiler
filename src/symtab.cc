@@ -27,10 +27,10 @@ void TreeSymtabVisitor::visit(TreeListNode *node)
 
 void TreeSymtabVisitor::visit(TreeBindingNode *node)
 {
-    table.enter_scope();
-
     // Insert this `let x = ...` into the symbol table
     table.insert(Declaration {node->id, node->attr_type});
+
+    table.enter_scope();
     
     if (node->params != nullptr) {
         node->params->accept(this);
