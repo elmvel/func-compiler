@@ -7,8 +7,11 @@
 
 struct TreeSemaVisitor : ITreeVisitor
 {
+    /*
+      For Dr. Z: Took WAYYY too long to find a bug with uninitialized data (v_insert)
+     */
     TreeSemaVisitor(SymbolTable& table)
-        : table(std::move(table))
+        : table(std::move(table)), valid(true), v_type(nullptr), v_insert(false)
     {}
     
     virtual void visit(TreeSeqNode *node);
@@ -22,7 +25,9 @@ struct TreeSemaVisitor : ITreeVisitor
     virtual void visit(TreeStringNode *node);
 
     SymbolTable table;
-    Type v_type;
+    bool valid;
+
+    Type *v_type;
     bool v_insert;
 };
 

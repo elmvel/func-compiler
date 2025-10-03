@@ -60,10 +60,16 @@ void TreeSymtabVisitor::visit(TreeApplyNode *node)
 }
 
 void TreeSymtabVisitor::visit(TreeIdentNode *node)
-{}
+{
+    (void)node;
+}
 
 void TreeSymtabVisitor::visit(TreeIntegerNode *node)
-{}
+{
+    (void)node;
+}
 
 void TreeSymtabVisitor::visit(TreeStringNode *node)
-{}
+{
+    (void)node;
+}

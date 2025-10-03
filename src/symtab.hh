@@ -14,16 +14,16 @@ struct Declaration
         : id(id), type()
     {}
 
-    Declaration(const std::string& id, Type type)
+    Declaration(const std::string& id, Type *type)
         : id(id), type(type)
     {}
 
-    Declaration(const std::string& id, std::optional<Type> type)
+    Declaration(const std::string& id, std::optional<Type *> type)
         : id(id), type(type)
     {}
     
     std::string id;
-    std::optional<Type> type;
+    std::optional<Type *> type;
     // SourceLocation location;
 };
 

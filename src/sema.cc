@@ -1,4 +1,7 @@
+#include <cassert>
+
 #include "sema.hh"
+#include "types.hh"
 
 #include <fmt/core.h>
 #include <fmt/std.h>
@@ -11,12 +14,25 @@ figure out through analysis that the types will work out
 
 auto fmt::formatter<Type>::format(Type c, fmt::v10::format_context& ctx) const
     -> format_context::iterator {
-  string_view name = "<unknown>";
-  switch (c) {
-  case Type::Integer:  name="Integer";  break;
-  case Type::String:   name="String";   break;
-  }
-  return formatter<std::string_view>::format(name, ctx);
+    std::string name = "<unknown>";
+    std::visit(overloaded {
+        [&name](TypePrimitive prim)
+        {
+            switch (prim) {
+            case TypePrimitive::Integer: name = std::string("int"); break;
+            case TypePrimitive::String: name = std::string("string"); break;
+            }
+        },
+        [&name](TypeFunction func)
+        {
+            assert(func.input != nullptr);
+            assert(func.output != nullptr);
+            std::string lhs = fmt::format("{}", *func.input);
+            std::string rhs = fmt::format("{}", *func.output);
+            name = fmt::format("{} -> {}", lhs, rhs);
+        }
+    }, c.storage);
+    return formatter<std::string>::format(name, ctx);
 }
 
 void TreeSemaVisitor::visit(TreeSeqNode *node)
@@ -28,7 +44,11 @@ void TreeSemaVisitor::visit(TreeSeqNode *node)
 
 void TreeSemaVisitor::visit(TreeParamsNode *node)
 {
-    // TODO: SEMA for params
+    v_insert = true;
+    for (auto& param : node->children) {
+        param->accept(this);
+    }
+    v_insert = false;
 }
 
 void TreeSemaVisitor::visit(TreeListNode *node)
@@ -40,12 +60,9 @@ void TreeSemaVisitor::visit(TreeListNode *node)
 
 void TreeSemaVisitor::visit(TreeBindingNode *node)
 {
-    // TODO: how should I treat parameters?
-    // I treat the parameter list [a, ..., z] as just a TreeListNode.
-    // However, this means I can't have special rules for traversing parameters,
-    // which may have type annotations. Therefore, I need a special node for the
-    // parameters list (which should probably just be sugar anyway...) so that I
-    // can store type annotated information
+    if (node->params != nullptr) {
+        node->params->accept(this);
+    }
     
     node->body->accept(this);
     if (node->next != nullptr) {
@@ -56,22 +73,24 @@ void TreeSemaVisitor::visit(TreeBindingNode *node)
 void TreeSemaVisitor::visit(TreeBinopNode *node)
 {
     node->lhs->accept(this);
-    Type ltype = v_type;
+    Type *ltype = v_type;
 
     node->rhs->accept(this);
+    Type *rtype = v_type;
 
-    if (ltype != v_type) {
-        // Could probably store a result in the visitor?
-        fmt::println("error: Type mismatch in binary expression.");
-        fmt::println("note: lhs was of type {} while rhs was of type {}.", ltype, v_type);
-        abort();
+    if (*ltype != *rtype) {
+        COMPILER_ERROR("Type mismatch in binary expression.");
+        COMPILER_NOTE("lhs was of type `{}` while rhs was of type `{}`.", *ltype, *rtype);
+        valid = false;
     }
 }
 
 void TreeSemaVisitor::visit(TreeApplyNode *node)
 {
     node->func->accept(this);
-    Type fn_type = v_type;
+    Type *fn_type = v_type;
+
+    (void)fn_type;
 
     // TODO: analyze that the type of the function is
     // consistent with the arguments passed...?
@@ -81,6 +100,8 @@ void TreeSemaVisitor::visit(TreeIdentNode *node)
 {
     if (v_insert) {
         table.insert(Declaration {node->name, node->attr_type});
+        if (node->attr_type.has_value())
+            v_type = *node->attr_type;
     } else {
         // First, see if it has an established type.
         if (node->attr_type.has_value()) {
@@ -103,10 +124,15 @@ void TreeSemaVisitor::visit(TreeIdentNode *node)
 
 void TreeSemaVisitor::visit(TreeIntegerNode *node)
 {
-    v_type = Type::Integer;
+    UNUSED(node);
+    // For Dr. Z: Smart pointers
+    // TODO: memory leak
+    v_type = new Type(TypePrimitive::Integer);
 }
 
 void TreeSemaVisitor::visit(TreeStringNode *node)
 {
-    v_type = Type::String;
+    UNUSED(node);
+    // TODO: memory leak
+    v_type = new Type(TypePrimitive::String);
 }

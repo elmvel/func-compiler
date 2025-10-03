@@ -234,6 +234,8 @@ int main()
         TreeSemaVisitor visitor_sema(visitor_symtab.table);
         root->accept(&visitor_sema);
 
+        if (!visitor_sema.valid) COMPILER_TERM();
+
         fmt::println("Passed Semantic Analysis!");
 
         delete root;

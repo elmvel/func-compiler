@@ -1,21 +1,13 @@
-let sum [a: int, b: int] :=
+let sum: int [a: int, b: int] :=
     a + b
 end
 
-let quo [] :=
-    sum 1 2
-end
+let A: int := 1 + 2
 
-let xd: int := 64
+let B: int := 2 + 3
 
-let A [] :=
-    xd + 1
-end
+let C: string := "Hello world"
 
-let B [] :=
-    sum xd 1
-end
+let D: int := 1 + "2"
 
-let C [] :=
-    sum 1 "2"
-end
+let E: string := "Hello world" + 5

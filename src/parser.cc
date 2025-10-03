@@ -45,7 +45,7 @@ TreeNode *Parser::parse_binding()
         return m_scanner.lexeme();
     });
 
-    std::optional<Type> type_hint;
+    std::optional<Type *> type_hint;
     if (has_token(TokenType::Colon)) {
         next_token();
 
@@ -80,7 +80,7 @@ TreeNode *Parser::parse_param_list()
     // Early return for empty params
     if (has_token(TokenType::RBracket)) {
         match(m_head_token.value());
-        return new TreeListNode({});
+        return new TreeParamsNode({});
     }
     
     TreeNode *params = parse_param_seq();
@@ -102,7 +102,7 @@ TreeNode *Parser::parse_param_seq()
     if (has_token(TokenType::Colon)) {
         next_token();
 
-        Type type = parse_type();
+        Type *type = parse_type();
         static_cast<TreeIdentNode *>(ident)->attr_type = type;
     }
 
@@ -118,14 +118,14 @@ TreeNode *Parser::parse_param_seq()
         if (has_token(TokenType::Colon)) {
             next_token();
 
-            Type type = parse_type();
+            Type *type = parse_type();
             static_cast<TreeIdentNode *>(ident)->attr_type = type;
         }
 
         nodes.push_back(ident);
     }
 
-    return new TreeListNode(nodes);
+    return new TreeParamsNode(nodes);
 }
 
 /*
@@ -223,16 +223,16 @@ TreeNode *Parser::parse_primary_expr(bool apply)
     }
 }
 
-Type Parser::parse_type()
+Type *Parser::parse_type_primitive()
 {
     if (has_token(TokenType::TyInt)) {
         next_token();
 
-        return Type::Integer;
+        return new Type(TypePrimitive::Integer);
     } else if (has_token(TokenType::TyString)) {
         next_token();
 
-        return Type::String;
+        return new Type(TypePrimitive::String);
     } else {
         if (!m_head_token.has_value()) {
             fmt::println("Could not parse a type: EOF.");
@@ -242,6 +242,18 @@ Type Parser::parse_type()
             abort();
         }
     }
+}
+
+Type *Parser::parse_type()
+{
+    Type *lhs = parse_type_primitive();
+    if (has_token(TokenType::Arrow)) {
+        next_token();
+
+        Type *rhs = parse_type();
+        lhs = new Type(TypeFunction(lhs, rhs));
+    }
+    return lhs;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

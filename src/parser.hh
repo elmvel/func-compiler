@@ -29,7 +29,8 @@ public:
     [[nodiscard]] TreeNode *parse_body();
     [[nodiscard]] TreeNode *parse_expr(int precedence);
     [[nodiscard]] TreeNode *parse_primary_expr(bool apply);
-    [[nodiscard]] Type parse_type();
+    [[nodiscard]] Type *parse_type();
+    [[nodiscard]] Type *parse_type_primitive();
 private:
     void match(TokenType type);
     void next_token();
