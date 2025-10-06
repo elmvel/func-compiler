@@ -103,25 +103,6 @@ void TreeSemaVisitor::visit(TreeBinopNode *node)
     v_type.write(ltype);
 }
 
-/*
-  sum 1 "2": Apply(Apply(sum, 1), "2")
-
-  int -> int -> int
-
-  Recursive Base:
-  Apply(sum, 1)
-
-  fn_type =>  int -> (int -> int)
-  arg_type => int
-              ^ Match!
-
-  Recursive Top:
-  Apply(<subexpr>, "2")
-
-  fn_type =>  int -> int
-  arg_type => string
-              ^ Error!
- */
 void TreeSemaVisitor::visit(TreeApplyNode *node)
 {
     v_type.erase();
