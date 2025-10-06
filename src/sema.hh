@@ -5,13 +5,66 @@
 #include "tree.hh"
 #include "symtab.hh"
 
+/*
+  Answers a question about the immediate accept() call.
+  Resets on being read.
+ */
+template <class T>
+struct VisitValue
+{
+    VisitValue()
+        : value(), valid(false)
+    {}
+
+    void write(const T& v)
+    {
+        value = v;
+        valid = true;
+    }
+
+    std::optional<T> read()
+    {
+        if (!valid) return {};
+
+        // Values can only be read once.
+        valid = false;
+
+        return value;
+    }
+
+    T read_asserted()
+    {
+        auto opt = read();
+        assert(opt.has_value());
+        return *opt;
+    }
+
+    T read_or(const T& _default)
+    {
+        auto opt = read();
+        if (opt.has_value())
+            return *opt;
+        return _default;
+    }
+
+    bool is_valid()
+    {
+        return valid;
+    }
+
+    void erase()
+    {
+        valid = false;
+    }
+    
+    T value;
+    bool valid;
+};
+
 struct TreeSemaVisitor : ITreeVisitor
 {
-    /*
-      For Dr. Z: Took way too long to find a bug with uninitialized data (v_insert)
-     */
     TreeSemaVisitor(SymbolTable& table)
-        : table(std::move(table)), valid(true), v_type(nullptr), v_insert(false)
+        : table(std::move(table)), valid(true), v_type(), v_insert(), v_arity()
     {}
     
     virtual void visit(TreeSeqNode *node);
@@ -25,15 +78,11 @@ struct TreeSemaVisitor : ITreeVisitor
     virtual void visit(TreeStringNode *node);
 
     SymbolTable table;
-    /*
-      For Dr. Z: I like visitor pattern for the flexibility with storing state
-      (VS. the messiness of needing to manage unique return types with recursive analysis functions
-      when I made a compiler in Rust)
-     */
     bool valid;
 
-    Type *v_type;
-    bool v_insert;
+    VisitValue<Type *> v_type;
+    VisitValue<bool>   v_insert;
+    VisitValue<size_t> v_arity;
 };
 
 #endif // SEMA_HH_

@@ -11,19 +11,28 @@
 struct Declaration
 {
     Declaration(const std::string& id)
-        : id(id), type()
+        : id(id), type(), arity()
     {}
 
     Declaration(const std::string& id, Type *type)
-        : id(id), type(type)
+        : id(id), type(type), arity()
     {}
 
     Declaration(const std::string& id, std::optional<Type *> type)
-        : id(id), type(type)
+        : id(id), type(type), arity()
+    {}
+
+    Declaration(const std::string& id, Type *type, size_t arity)
+        : id(id), type(type), arity(arity)
+    {}
+
+    Declaration(const std::string& id, std::optional<Type *> type, size_t arity)
+        : id(id), type(type), arity(arity)
     {}
     
     std::string id;
     std::optional<Type *> type;
+    std::optional<size_t> arity;
     // SourceLocation location;
 };
 

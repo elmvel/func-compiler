@@ -28,8 +28,19 @@ void TreeSymtabVisitor::visit(TreeListNode *node)
 void TreeSymtabVisitor::visit(TreeBindingNode *node)
 {
     // Insert this `let x = ...` into the symbol table
-    table.insert(Declaration {node->id, node->attr_type});
+    if (node->params != nullptr) {
+        // Synthesize the function type based on the parameters and return types
+        
+        assert(node->attr_type.has_value());
+        auto [fn_type, arity] =
+            make_function_type(static_cast<TreeParamsNode *>(node->params), *node->attr_type);
 
+        table.insert(Declaration {node->id, fn_type, arity});
+    } else {
+        table.insert(Declaration {node->id, node->attr_type});
+    }
+
+    // Start traversing the AST
     table.enter_scope();
     
     if (node->params != nullptr) {

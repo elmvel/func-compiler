@@ -44,11 +44,10 @@ void TreeSemaVisitor::visit(TreeSeqNode *node)
 
 void TreeSemaVisitor::visit(TreeParamsNode *node)
 {
-    v_insert = true;
     for (auto& param : node->children) {
+        v_insert.write(true);
         param->accept(this);
     }
-    v_insert = false;
 }
 
 void TreeSemaVisitor::visit(TreeListNode *node)
@@ -81,44 +80,94 @@ void TreeSemaVisitor::visit(TreeBindingNode *node)
 void TreeSemaVisitor::visit(TreeBinopNode *node)
 {
     node->lhs->accept(this);
-    Type *ltype = v_type;
+    Type *ltype = v_type.read_or(new Type(TypePrimitive::Integer));
 
     node->rhs->accept(this);
-    Type *rtype = v_type;
+    Type *rtype = v_type.read_or(new Type(TypePrimitive::Integer));
 
     if (*ltype != *rtype) {
         COMPILER_ERROR("Type mismatch in binary expression.");
         COMPILER_NOTE("lhs was of type `{}` while rhs was of type `{}`.", *ltype, *rtype);
         valid = false;
+
+        // Keep v_type invalid
+        return;
     }
+
+    /*
+      For Dr. Z: This saved me debugging time, as I was implicity leaving v_type the same.
+      (but now I must explicitly say the overall type of the visited nodes)
+
+      (I don't know if my custom type exists already, since it is niche [I had no internet!])
+     */
+    v_type.write(ltype);
 }
 
+/*
+  sum 1 "2": Apply(Apply(sum, 1), "2")
+
+  int -> int -> int
+
+  Recursive Base:
+  Apply(sum, 1)
+
+  fn_type =>  int -> (int -> int)
+  arg_type => int
+              ^ Match!
+
+  Recursive Top:
+  Apply(<subexpr>, "2")
+
+  fn_type =>  int -> int
+  arg_type => string
+              ^ Error!
+ */
 void TreeSemaVisitor::visit(TreeApplyNode *node)
 {
+    v_type.erase();
     node->func->accept(this);
-    Type *fn_type = v_type;
 
-    (void)fn_type;
+    // We can't examine a function application that is already invalid
+    if (!v_type.is_valid()) return;
+    
+    Type *fn_type = v_type.read_asserted();
 
-    // TODO: analyze that the type of the function is
-    // consistent with the arguments passed...?
+    node->arg->accept(this);
+    Type *arg_type = v_type.read_asserted();
+
+    assert(fn_type->get_input().has_value());
+    Type *expected = *fn_type->get_input();
+    Type *got = arg_type;
+    if (*got != *expected) {
+        COMPILER_ERROR("Type mismatch in function application.");
+        COMPILER_NOTE("Function accepted `{}` but was supplied `{}` instead.",
+                      *expected, *got);
+        valid = false;
+    }
+
+    auto ret_type = fn_type->get_output();
+    assert(ret_type.has_value());
+    v_type.write(*ret_type);
 }
 
 void TreeSemaVisitor::visit(TreeIdentNode *node)
 {
-    if (v_insert) {
+    if (v_insert.is_valid() && v_insert.read_asserted()) {
         table.insert(Declaration {node->name, node->attr_type});
         if (node->attr_type.has_value())
-            v_type = *node->attr_type;
+            v_type.write(*node->attr_type);
     } else {
         // First, see if it has an established type.
         if (node->attr_type.has_value()) {
-            v_type = *node->attr_type;
+            v_type.write(*node->attr_type);
         } else {
             auto decl = table.lookup(node->name);
             if (decl.has_value()) {
+                if (decl->arity.has_value())
+                    v_arity.write(*decl->arity);
+
                 if (decl->type.has_value()) {
-                    v_type = *decl->type;
+                    v_type.write(*decl->type);
                 } else {
                     COMPILER_ERROR("Binding `{}` has no type!", node->name);
                     valid = false;
@@ -134,14 +183,13 @@ void TreeSemaVisitor::visit(TreeIdentNode *node)
 void TreeSemaVisitor::visit(TreeIntegerNode *node)
 {
     UNUSED(node);
-    // For Dr. Z: Smart pointers
     // TODO: memory leak
-    v_type = new Type(TypePrimitive::Integer);
+    v_type.write(new Type(TypePrimitive::Integer));
 }
 
 void TreeSemaVisitor::visit(TreeStringNode *node)
 {
     UNUSED(node);
     // TODO: memory leak
-    v_type = new Type(TypePrimitive::String);
+    v_type.write(new Type(TypePrimitive::String));
 }

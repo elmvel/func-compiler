@@ -44,6 +44,22 @@ struct Type
         : storage(fn)
     {}
 
+    std::optional<Type *> get_input()
+    {
+        const TypeFunction *func = std::get_if<TypeFunction>(&storage);
+        if (func == nullptr) return {};
+
+        return func->input;
+    }
+
+    std::optional<Type *> get_output()
+    {
+        const TypeFunction *func = std::get_if<TypeFunction>(&storage);
+        if (func == nullptr) return {};
+
+        return func->output;
+    }
+
     // Not the prettiest...
     bool operator==(const Type& other) const
     {
@@ -69,20 +85,21 @@ struct Type
         return !(*this == other);
     }
 
-    ~Type()
-    {
-        std::visit(overloaded {
-            [](TypePrimitive prim)
-            {
-                (void)prim;
-            },
-            [](TypeFunction func)
-            {
-                delete func.input;
-                delete func.output;
-            },
-        }, storage);
-    }
+    // TODO: fix allocation strategy with types
+    // ~Type()
+    // {
+    //     std::visit(overloaded {
+    //         [](TypePrimitive prim)
+    //         {
+    //             (void)prim;
+    //         },
+    //         [](TypeFunction func)
+    //         {
+    //             delete func.input;
+    //             delete func.output;
+    //         },
+    //     }, storage);
+    // }
     
     std::variant<TypePrimitive, TypeFunction> storage;
 };
@@ -91,5 +108,9 @@ template <> struct fmt::formatter<Type>: formatter<std::string> {
   auto format(Type c, format_context& ctx) const
     -> format_context::iterator;
 };
+
+struct TreeParamsNode;
+
+std::pair<Type *, size_t> make_function_type(TreeParamsNode *node, Type *ret_type);
 
 #endif // TYPES_HH_

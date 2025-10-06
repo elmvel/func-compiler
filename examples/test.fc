@@ -29,3 +29,5 @@ let I: int := sum 1 2
 let J: int := mul 2 3
 
 let K: int := sum 1 "2"
+
+let L: int := sum "1" 2

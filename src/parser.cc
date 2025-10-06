@@ -223,7 +223,13 @@ TreeNode *Parser::parse_primary_expr(bool apply)
 
 Type *Parser::parse_type_primitive()
 {
-    if (has_token(TokenType::TyInt)) {
+    if (has_token(TokenType::LParen)) {
+        next_token();
+        
+        Type *type = parse_type();
+        match(TokenType::RParen);
+        return type;
+    } else if (has_token(TokenType::TyInt)) {
         next_token();
 
         return new Type(TypePrimitive::Integer);

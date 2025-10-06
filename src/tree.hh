@@ -25,8 +25,6 @@ struct SourceLocation
     int colno;
 };
 
-// TODO: might move this to an attributes header instead
-
 struct TreeNode;
 struct TreeSeqNode;
 struct TreeParamsNode;
