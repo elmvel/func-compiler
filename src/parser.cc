@@ -32,8 +32,8 @@ TreeNode *Parser::parse_program()
 }
 
 /*
-<binding> ::= LET <id> <param-list> ":=" <body> END
-            | LET <id> ":=" <expr>
+<binding> ::= LET <id> [":" <type>] <param-list> ":=" <body> END
+            | LET <id> [":" <type>] ":=" <expr>
  */
 TreeNode *Parser::parse_binding()
 {
@@ -44,6 +44,13 @@ TreeNode *Parser::parse_binding()
     std::string name = match(TokenType::Id, [&](){
         return m_scanner.lexeme();
     });
+
+    std::optional<Type *> type_hint;
+    if (has_token(TokenType::Colon)) {
+        next_token();
+
+        type_hint = parse_type();
+    }
 
     TreeNode *params = NULL;
     if (has_token(TokenType::LBracket)) {
@@ -56,7 +63,11 @@ TreeNode *Parser::parse_binding()
     TreeNode *body = parse_body();
     if (require_end) match(TokenType::End);
 
-    return new TreeBindingNode(name, body, params);
+    auto node = new TreeBindingNode(name, body, params);
+    if (type_hint.has_value()) {
+        node->attr_type = *type_hint;
+    }
+    return node;
 }
 
 /*
@@ -69,7 +80,7 @@ TreeNode *Parser::parse_param_list()
     // Early return for empty params
     if (has_token(TokenType::RBracket)) {
         match(m_head_token.value());
-        return new TreeListNode({});
+        return new TreeParamsNode({});
     }
     
     TreeNode *params = parse_param_seq();
@@ -78,29 +89,43 @@ TreeNode *Parser::parse_param_list()
 }
 
 /*
-<param-seq>  ::= ID "," <param-seq> | ID
+<param-seq>  ::= ID [":" <type>] "," <param-seq> | ID
  */
 TreeNode *Parser::parse_param_seq()
 {
     std::vector<TreeNode *> nodes;
     
-    match(TokenType::Id, [&](){
-        TreeNode *ident = new TreeIdentNode(m_scanner.lexeme());
-        nodes.push_back(ident);
-        return VOID_MATCH;
+    TreeNode *ident = match(TokenType::Id, [&](){
+        return new TreeIdentNode(m_scanner.lexeme());
     });
 
-    while (has_token(TokenType::Comma)) {
-        match(m_head_token.value());
+    if (has_token(TokenType::Colon)) {
+        next_token();
 
-        match(TokenType::Id, [&](){
-            TreeNode *ident = new TreeIdentNode(m_scanner.lexeme());
-            nodes.push_back(ident);
-            return VOID_MATCH;
-        });
+        Type *type = parse_type();
+        static_cast<TreeIdentNode *>(ident)->attr_type = type;
     }
 
-    return new TreeListNode(nodes);
+    nodes.push_back(ident);
+
+    while (has_token(TokenType::Comma)) {
+        next_token();
+
+        TreeNode *ident = match(TokenType::Id, [&](){
+            return new TreeIdentNode(m_scanner.lexeme());
+        });
+
+        if (has_token(TokenType::Colon)) {
+            next_token();
+
+            Type *type = parse_type();
+            static_cast<TreeIdentNode *>(ident)->attr_type = type;
+        }
+
+        nodes.push_back(ident);
+    }
+
+    return new TreeParamsNode(nodes);
 }
 
 /*
@@ -189,13 +214,48 @@ TreeNode *Parser::parse_primary_expr(bool apply)
         });
     } else {
         if (!m_head_token.has_value()) {
-            fmt::println("Could not parse an expression: EOF.");
-            abort();
+            COMPILER_ERROR_TERM("Could not parse an expression: EOF.");
         } else {
-            fmt::println("Could not parse an expression: Head token = {}", *m_head_token);
-            abort();
+            COMPILER_ERROR_TERM("Could not parse an expression: Head token = {}", *m_head_token);
         }
     }
+}
+
+Type *Parser::parse_type_primitive()
+{
+    if (has_token(TokenType::LParen)) {
+        next_token();
+        
+        Type *type = parse_type();
+        match(TokenType::RParen);
+        return type;
+    } else if (has_token(TokenType::TyInt)) {
+        next_token();
+
+        return new Type(TypePrimitive::Integer);
+    } else if (has_token(TokenType::TyString)) {
+        next_token();
+
+        return new Type(TypePrimitive::String);
+    } else {
+        if (!m_head_token.has_value()) {
+            COMPILER_ERROR_TERM("Could not parse a type: EOF.");
+        } else {
+            COMPILER_ERROR_TERM("Could not parse a type: Head token = {}", *m_head_token);
+        }
+    }
+}
+
+Type *Parser::parse_type()
+{
+    Type *lhs = parse_type_primitive();
+    if (has_token(TokenType::Arrow)) {
+        next_token();
+
+        Type *rhs = parse_type();
+        lhs = new Type(TypeFunction(lhs, rhs));
+    }
+    return lhs;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -208,14 +268,11 @@ void Parser::match(TokenType type)
         if (m_head_token.value() == type) {
             next_token();
         } else {
-            fmt::println("ERROR: Parser wanted to match a token but got {}.", type);
-            fmt::println("TODO: Improve error handling within parser.");
-            abort();
+            // TODO: allow for error recovery in some cases if time allows
+            COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got {}.", type);
         }
     } else {
-        fmt::println("ERROR: Parser wanted to match a token but got EOF.");
-        fmt::println("TODO: Improve error handling within parser.");
-        abort();
+        COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got EOF.");
     }
 }
 
@@ -233,11 +290,9 @@ bool Parser::has_token(TokenType type)
 void Parser::require_token(TokenType type)
 {
     if (!m_head_token.has_value()) {
-        fmt::println("error: Expected token type {}, but got EOF", type);
-        abort();
+        COMPILER_ERROR_TERM("error: Expected token type {}, but got EOF", type);
     }
     if (!has_token(type)) {
-        fmt::println("error: Expected token type {}, but got {}", type, *m_head_token);
-        abort();
+        COMPILER_ERROR_TERM("error: Expected token type {}, but got {}", type, *m_head_token);
     }
 }

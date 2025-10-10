@@ -1,53 +1,33 @@
-(* Sums two integers together *)
-let foo [a, b] :=
-    10
+(* Sometime soon it might be worth writing tests *)
+
+let sum: int [a: int, b: int] :=
+    a + b
 end
 
-let bar [b, c] :=
-    10 * 4 - 32
-end
+let sum: int := 5
 
-let baz [x, y] :=
-    5 * 6 + 10 * 2 + 30 + 27 + 16 + 3 * 4
-end
+let A: int := 1 + 2
 
-let parentest [] :=
-    (3 + 4) * (5 + 6)
-end
+let B: int := 2 + 3
 
-let apply [] :=
-    f x y z
-end
+let C: string := "Hello world"
 
-let complicated [] :=
-    let inner := f 10 12 13,
-    inner * 100
-end
+let D: int := 1 + "2"
 
-(* Here are examples from lang.txt *)
+let E: string := "Hello world" + 5
 
-let bar [x, y] :=
-    let a := 1,
-    let b := 2,
-    (a + x) + (b + y)
-end
+let F: int := a + b + c + 10
 
-let helpedfn [n] :=
-    let helper [n] :=
-        n * 15
-    end,
-    helper n + 5
-end
+let G: int :=
+    let y: int := 5,
+    5 + 10 + y
 
-let main [args] :=
-    print "Hello World"
-end
+let H: int := y + 10
 
-(*
-Potential syntax for type annotations
+let I: int := sum 1 2
 
-let scale: int -> int [x] :=
-    let scalar: int := 2,
-    x * scalar
-end
-*)
+let J: int := mul 2 3
+
+let K: int := sum 1 "2"
+
+let L: int := sum "1" 2

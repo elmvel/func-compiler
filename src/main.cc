@@ -10,9 +10,12 @@
 #include "common.hh"
 #include "scanner.hh"
 #include "parser.hh"
+#include "symtab.hh"
+#include "sema.hh"
 
 // #define ONLY_SCAN
-#define ONLY_PARSE
+// #define ONLY_PARSE
+#define ONLY_SEMA
 
 std::optional<std::string> read_file(const std::string& file_path)
 {
@@ -65,6 +68,21 @@ struct TreeTraceVisitor : ITreeVisitor
             local_text.append(text);
             local_text.append("\n\n");
         }
+        text = local_text;
+    }
+
+    virtual void visit(TreeParamsNode *node)
+    {
+        std::string local_text = "";
+        local_text.push_back('[');
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            if (i != 0) {
+                local_text.append(", ");
+            }
+            node->children[i]->accept(this);
+            local_text.append(text);
+        }
+        local_text.push_back(']');
         text = local_text;
     }
 
@@ -196,6 +214,29 @@ int main()
         TreeTraceVisitor visitor;
         root->accept(&visitor);
         fmt::println("{}", visitor.text);
+
+        delete root;
+    }
+#elif defined (ONLY_SEMA)
+    fmt::println("========================================");
+    fmt::println("            Semantic Analysis           ");
+    fmt::println("========================================");
+    {
+        Scanner scanner {*file_content};
+        Parser parser {scanner};
+        TreeNode *root = parser.parse_program();
+
+        // This does probably walk more of the tree than necessary,
+        // but oh well...
+        TreeSymtabVisitor visitor_symtab;
+        root->accept(&visitor_symtab);
+
+        TreeSemaVisitor visitor_sema(visitor_symtab.table);
+        root->accept(&visitor_sema);
+
+        if (!visitor_sema.valid) COMPILER_TERM();
+
+        fmt::println("Passed Semantic Analysis!");
 
         delete root;
     }

@@ -1,5 +1,5 @@
-#ifndef SCANNER_H_
-#define SCANNER_H_
+#ifndef SCANNER_HH_
+#define SCANNER_HH_
 
 #include <optional>
 #include <string>
@@ -28,6 +28,7 @@ enum class TokenType
     Arrow,
     And,
     Dot,
+    Colon,
 
     // Keywords
     Let,
@@ -36,6 +37,10 @@ enum class TokenType
     Then,
     Else,
     Match,
+
+    // Type Keywords
+    TyInt,
+    TyString,
 };
 
 // Fmt support for TokenType
@@ -72,4 +77,4 @@ private:
     int m_number;
 };
 
-#endif // SCANNER_H_
+#endif // SCANNER_HH_
