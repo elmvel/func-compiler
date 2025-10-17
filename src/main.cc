@@ -15,7 +15,8 @@
 
 // #define ONLY_SCAN
 // #define ONLY_PARSE
-#define ONLY_SEMA
+// #define ONLY_SEMA
+#define ONLY_ELC_GEN
 
 std::optional<std::string> read_file(const std::string& file_path)
 {
@@ -237,6 +238,30 @@ int main()
         if (!visitor_sema.valid) COMPILER_TERM();
 
         fmt::println("Passed Semantic Analysis!");
+
+        delete root;
+    }
+#elif defined (ONLY_ELC_GEN)
+    fmt::println("========================================");
+    fmt::println("    Enriched Lambda Calculus Codegen    ");
+    fmt::println("========================================");
+    {
+        Scanner scanner {*file_content};
+        Parser parser {scanner};
+        TreeNode *root = parser.parse_program();
+
+        // Symbol Table Pass
+        TreeSymtabVisitor visitor_symtab;
+        root->accept(&visitor_symtab);
+
+        // Semantic Analysis Pass
+        TreeSemaVisitor visitor_sema(visitor_symtab.table);
+        root->accept(&visitor_sema);
+
+        if (!visitor_sema.valid) COMPILER_TERM();
+
+        fmt::println("Passed Semantic Analysis!");
+        fmt::println("TODO: Translate the AST to Enriched Lambda Calculus");
 
         delete root;
     }
