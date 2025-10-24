@@ -29,8 +29,8 @@ public:
     [[nodiscard]] std::unique_ptr<TreeNode> parse_body();
     [[nodiscard]] std::unique_ptr<TreeNode> parse_expr(int precedence);
     [[nodiscard]] std::unique_ptr<TreeNode> parse_primary_expr(bool apply);
-    [[nodiscard]] Type *parse_type();
-    [[nodiscard]] Type *parse_type_primitive();
+    [[nodiscard]] TypePtr parse_type();
+    [[nodiscard]] TypePtr parse_type_primitive();
 private:
     void match(TokenType type);
     void next_token();

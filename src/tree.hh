@@ -108,8 +108,6 @@ struct TreeBindingNode : TreeNode
     
     virtual ~TreeBindingNode()
     {
-        if (attr_type.has_value())
-            delete attr_type.value();
     }
 
     virtual void accept(ITreeVisitor *visitor)
@@ -123,7 +121,7 @@ struct TreeBindingNode : TreeNode
     std::unique_ptr<TreeNode> next;
 
     // Attributes
-    std::optional<Type *> attr_type;
+    std::optional<TypePtr> attr_type;
 };
 
 struct TreeBinopNode : TreeNode
@@ -134,8 +132,6 @@ struct TreeBinopNode : TreeNode
 
     virtual ~TreeBinopNode()
     {
-        if (attr_type.has_value())
-            delete attr_type.value();
     }
 
     virtual void accept(ITreeVisitor *visitor)
@@ -148,7 +144,7 @@ struct TreeBinopNode : TreeNode
     std::unique_ptr<TreeNode> rhs;
 
     // Attributes
-    std::optional<Type *> attr_type;
+    std::optional<TypePtr> attr_type;
 };
 
 struct TreeApplyNode : TreeNode
@@ -159,8 +155,6 @@ struct TreeApplyNode : TreeNode
     
     virtual ~TreeApplyNode()
     {
-        if (attr_type.has_value())
-            delete attr_type.value();
     }
 
     virtual void accept(ITreeVisitor *visitor)
@@ -172,7 +166,7 @@ struct TreeApplyNode : TreeNode
     std::unique_ptr<TreeNode> arg;
 
     // Attributes
-    std::optional<Type *> attr_type;
+    std::optional<TypePtr> attr_type;
 };
 
 struct TreeIdentNode : TreeNode
@@ -183,8 +177,6 @@ struct TreeIdentNode : TreeNode
 
     virtual ~TreeIdentNode()
     {
-        if (attr_type.has_value())
-            delete attr_type.value();
     }
 
     virtual void accept(ITreeVisitor *visitor)
@@ -195,7 +187,7 @@ struct TreeIdentNode : TreeNode
     std::string name;
 
     // Attributes
-    std::optional<Type *> attr_type;
+    std::optional<TypePtr> attr_type;
 };
 
 struct TreeIntegerNode : TreeNode
@@ -206,8 +198,6 @@ struct TreeIntegerNode : TreeNode
 
     virtual ~TreeIntegerNode()
     {
-        if (attr_type.has_value())
-            delete attr_type.value();
     }
 
     virtual void accept(ITreeVisitor *visitor)
@@ -218,7 +208,7 @@ struct TreeIntegerNode : TreeNode
     int value;
 
     // Attributes
-    std::optional<Type *> attr_type;
+    std::optional<TypePtr> attr_type;
 };
 
 struct TreeStringNode : TreeNode
@@ -229,8 +219,6 @@ struct TreeStringNode : TreeNode
 
     virtual ~TreeStringNode()
     {
-        if (attr_type.has_value())
-            delete attr_type.value();
     }
 
     virtual void accept(ITreeVisitor *visitor)
@@ -241,7 +229,7 @@ struct TreeStringNode : TreeNode
     std::string text;
 
     // Attributes
-    std::optional<Type *> attr_type;
+    std::optional<TypePtr> attr_type;
 };
 
 #endif // TREE_HH_

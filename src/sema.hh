@@ -80,7 +80,7 @@ struct TreeSemaVisitor : ITreeVisitor
     SymbolTable table;
     bool valid;
 
-    VisitValue<Type *> v_type;
+    VisitValue<TypePtr> v_type;
     VisitValue<bool>   v_insert;
     VisitValue<size_t> v_arity;
 };

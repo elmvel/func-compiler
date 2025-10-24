@@ -45,7 +45,7 @@ std::unique_ptr<TreeNode> Parser::parse_binding()
         return m_scanner.lexeme();
     });
 
-    std::optional<Type *> type_hint;
+    std::optional<TypePtr> type_hint;
     if (has_token(TokenType::Colon)) {
         next_token();
 
@@ -102,7 +102,7 @@ std::unique_ptr<TreeNode> Parser::parse_param_seq()
     if (has_token(TokenType::Colon)) {
         next_token();
 
-        Type *type = parse_type();
+        TypePtr type = parse_type();
         static_cast<TreeIdentNode *>(ident.get())->attr_type = type;
     }
 
@@ -118,7 +118,7 @@ std::unique_ptr<TreeNode> Parser::parse_param_seq()
         if (has_token(TokenType::Colon)) {
             next_token();
 
-            Type *type = parse_type();
+            TypePtr type = parse_type();
             static_cast<TreeIdentNode *>(ident.get())->attr_type = type;
         }
 
@@ -223,22 +223,22 @@ std::unique_ptr<TreeNode> Parser::parse_primary_expr(bool apply)
     }
 }
 
-Type *Parser::parse_type_primitive()
+TypePtr Parser::parse_type_primitive()
 {
     if (has_token(TokenType::LParen)) {
         next_token();
         
-        Type *type = parse_type();
+        TypePtr type = parse_type();
         match(TokenType::RParen);
         return type;
     } else if (has_token(TokenType::TyInt)) {
         next_token();
 
-        return new Type(TypePrimitive::Integer);
+        return std::make_shared<Type>(TypePrimitive::Integer);
     } else if (has_token(TokenType::TyString)) {
         next_token();
 
-        return new Type(TypePrimitive::String);
+        return std::make_shared<Type>(TypePrimitive::String);
     } else {
         if (!m_head_token.has_value()) {
             COMPILER_ERROR_TERM("Could not parse a type: EOF.");
@@ -248,14 +248,14 @@ Type *Parser::parse_type_primitive()
     }
 }
 
-Type *Parser::parse_type()
+TypePtr Parser::parse_type()
 {
-    Type *lhs = parse_type_primitive();
+    TypePtr lhs = parse_type_primitive();
     if (has_token(TokenType::Arrow)) {
         next_token();
 
-        Type *rhs = parse_type();
-        lhs = new Type(TypeFunction(lhs, rhs));
+        TypePtr rhs = parse_type();
+        lhs = std::make_shared<Type>(TypeFunction(lhs, rhs));
     }
     return lhs;
 }

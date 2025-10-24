@@ -80,10 +80,10 @@ void TreeSemaVisitor::visit(TreeBindingNode *node)
 void TreeSemaVisitor::visit(TreeBinopNode *node)
 {
     node->lhs->accept(this);
-    Type *ltype = v_type.read_or(new Type(TypePrimitive::Integer));
+    TypePtr ltype = v_type.read_or(std::make_shared<Type>(TypePrimitive::Integer));
 
     node->rhs->accept(this);
-    Type *rtype = v_type.read_or(new Type(TypePrimitive::Integer));
+    TypePtr rtype = v_type.read_or(std::make_shared<Type>(TypePrimitive::Integer));
 
     if (*ltype != *rtype) {
         COMPILER_ERROR("Type mismatch in binary expression.");
@@ -111,14 +111,14 @@ void TreeSemaVisitor::visit(TreeApplyNode *node)
     // We can't examine a function application that is already invalid
     if (!v_type.is_valid()) return;
     
-    Type *fn_type = v_type.read_asserted();
+    TypePtr fn_type = v_type.read_asserted();
 
     node->arg->accept(this);
-    Type *arg_type = v_type.read_asserted();
+    TypePtr arg_type = v_type.read_asserted();
 
     assert(fn_type->get_input().has_value());
-    Type *expected = *fn_type->get_input();
-    Type *got = arg_type;
+    TypePtr expected = *fn_type->get_input();
+    TypePtr got = arg_type;
     if (*got != *expected) {
         COMPILER_ERROR("Type mismatch in function application.");
         COMPILER_NOTE("Function accepted `{}` but was supplied `{}` instead.",
@@ -165,12 +165,12 @@ void TreeSemaVisitor::visit(TreeIntegerNode *node)
 {
     UNUSED(node);
     // TODO: memory leak
-    v_type.write(new Type(TypePrimitive::Integer));
+    v_type.write(std::make_shared<Type>(TypePrimitive::Integer));
 }
 
 void TreeSemaVisitor::visit(TreeStringNode *node)
 {
     UNUSED(node);
     // TODO: memory leak
-    v_type.write(new Type(TypePrimitive::String));
+    v_type.write(std::make_shared<Type>(TypePrimitive::String));
 }
