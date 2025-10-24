@@ -211,12 +211,10 @@ int main()
         Scanner scanner {*file_content};
         Parser parser {scanner};
 
-        TreeNode *root = parser.parse_program();
+        std::unique_ptr<TreeNode> root = parser.parse_program();
         TreeTraceVisitor visitor;
         root->accept(&visitor);
         fmt::println("{}", visitor.text);
-
-        delete root;
     }
 #elif defined (ONLY_SEMA)
     fmt::println("========================================");
@@ -225,7 +223,7 @@ int main()
     {
         Scanner scanner {*file_content};
         Parser parser {scanner};
-        TreeNode *root = parser.parse_program();
+        std::unique_ptr<TreeNode> root = parser.parse_program();
 
         // This does probably walk more of the tree than necessary,
         // but oh well...
@@ -238,8 +236,6 @@ int main()
         if (!visitor_sema.valid) COMPILER_TERM();
 
         fmt::println("Passed Semantic Analysis!");
-
-        delete root;
     }
 #elif defined (ONLY_ELC_GEN)
     fmt::println("========================================");
@@ -248,7 +244,7 @@ int main()
     {
         Scanner scanner {*file_content};
         Parser parser {scanner};
-        TreeNode *root = parser.parse_program();
+        std::unique_ptr<TreeNode> root = parser.parse_program();
 
         // Symbol Table Pass
         TreeSymtabVisitor visitor_symtab;
@@ -262,8 +258,6 @@ int main()
 
         fmt::println("Passed Semantic Analysis!");
         fmt::println("TODO: Translate the AST to Enriched Lambda Calculus");
-
-        delete root;
     }
 #else
     fmt::println("TODO: Full pass of compiler");

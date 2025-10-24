@@ -1,6 +1,7 @@
 #ifndef TREE_HH_
 #define TREE_HH_
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -59,79 +60,54 @@ struct TreeNode
 
 struct TreeSeqNode : TreeNode
 {
-    TreeSeqNode(const std::vector<TreeNode *> children)
-        : children(children)
+    TreeSeqNode(std::vector<std::unique_ptr<TreeNode>> children)
+        : children(std::move(children))
     {}
 
-    virtual ~TreeSeqNode()
-    {
-        for (auto& child : children) {
-            delete child;
-        }
-    }
-    
     virtual void accept(ITreeVisitor *visitor)
     {
         visitor->visit(this);
     }
 
-    std::vector<TreeNode *> children;
+    std::vector<std::unique_ptr<TreeNode>> children;
 };
 
 struct TreeParamsNode : TreeNode
 {
-    TreeParamsNode(const std::vector<TreeNode *> children)
-        : children(children)
+    TreeParamsNode(std::vector<std::unique_ptr<TreeNode>> children)
+        : children(std::move(children))
     {}
-
-    virtual ~TreeParamsNode()
-    {
-        for (auto& child : children) {
-            delete child;
-        }
-    }
     
     virtual void accept(ITreeVisitor *visitor)
     {
         visitor->visit(this);
     }
 
-    std::vector<TreeNode *> children;
+    std::vector<std::unique_ptr<TreeNode>> children;
 };
 
 struct TreeListNode : TreeNode
 {
-    TreeListNode(const std::vector<TreeNode *> children)
-        : children(children)
+    TreeListNode(std::vector<std::unique_ptr<TreeNode>> children)
+        : children(std::move(children))
     {}
 
-    virtual ~TreeListNode()
-    {
-        for (auto& child : children) {
-            delete child;
-        }
-    }
-    
     virtual void accept(ITreeVisitor *visitor)
     {
         visitor->visit(this);
     }
 
-    std::vector<TreeNode *> children;
+    std::vector<std::unique_ptr<TreeNode>> children;
 };
 
 struct TreeBindingNode : TreeNode
 {
-    TreeBindingNode(const std::string& id, TreeNode *body, TreeNode *params = nullptr)
-        : id(id), body(body), params(params), next(nullptr)
+    TreeBindingNode(const std::string& id, std::unique_ptr<TreeNode>& body, std::unique_ptr<TreeNode>& params)
+        : id(id), body(std::move(body)), params(std::move(params)), next(nullptr)
     {}
     
     virtual ~TreeBindingNode()
     {
-        delete body;
-        delete params;
-        delete next;
-
         if (attr_type.has_value())
             delete attr_type.value();
     }
@@ -142,9 +118,9 @@ struct TreeBindingNode : TreeNode
     }
     
     std::string id;
-    TreeNode *body;
-    TreeNode *params;
-    TreeNode *next;
+    std::unique_ptr<TreeNode> body;
+    std::unique_ptr<TreeNode> params;
+    std::unique_ptr<TreeNode> next;
 
     // Attributes
     std::optional<Type *> attr_type;
@@ -152,15 +128,12 @@ struct TreeBindingNode : TreeNode
 
 struct TreeBinopNode : TreeNode
 {
-    TreeBinopNode(TokenType op, TreeNode *lhs, TreeNode *rhs)
-        : op(op), lhs(lhs), rhs(rhs)
+    TreeBinopNode(TokenType op, std::unique_ptr<TreeNode>& lhs, std::unique_ptr<TreeNode>& rhs)
+        : op(op), lhs(std::move(lhs)), rhs(std::move(rhs))
     {}
 
     virtual ~TreeBinopNode()
     {
-        delete lhs;
-        delete rhs;
-
         if (attr_type.has_value())
             delete attr_type.value();
     }
@@ -171,8 +144,8 @@ struct TreeBinopNode : TreeNode
     }
     
     TokenType op;
-    TreeNode *lhs;
-    TreeNode *rhs;
+    std::unique_ptr<TreeNode> lhs;
+    std::unique_ptr<TreeNode> rhs;
 
     // Attributes
     std::optional<Type *> attr_type;
@@ -180,15 +153,12 @@ struct TreeBinopNode : TreeNode
 
 struct TreeApplyNode : TreeNode
 {
-    TreeApplyNode(TreeNode *func, TreeNode *arg)
-        : func(func), arg(arg)
+    TreeApplyNode(std::unique_ptr<TreeNode> func, std::unique_ptr<TreeNode> arg)
+        : func(std::move(func)), arg(std::move(arg))
     {}
     
     virtual ~TreeApplyNode()
     {
-        delete func;
-        delete arg;
-
         if (attr_type.has_value())
             delete attr_type.value();
     }
@@ -198,8 +168,8 @@ struct TreeApplyNode : TreeNode
         visitor->visit(this);
     }
 
-    TreeNode *func;
-    TreeNode *arg;
+    std::unique_ptr<TreeNode> func;
+    std::unique_ptr<TreeNode> arg;
 
     // Attributes
     std::optional<Type *> attr_type;

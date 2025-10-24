@@ -33,7 +33,7 @@ void TreeSymtabVisitor::visit(TreeBindingNode *node)
         
         assert(node->attr_type.has_value());
         auto [fn_type, arity] =
-            make_function_type(static_cast<TreeParamsNode *>(node->params), *node->attr_type);
+            make_function_type(static_cast<TreeParamsNode *>(node->params.get()), *node->attr_type);
 
         table.insert(Declaration {node->id, fn_type, arity});
     } else {

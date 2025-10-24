@@ -21,7 +21,7 @@ std::pair<Type *, size_t> make_function_type(TreeParamsNode *node, Type *ret_typ
 {
     std::vector<Type *> types;
     for (auto& child : node->children) {
-        TreeIdentNode *param = static_cast<TreeIdentNode *>(child);
+        TreeIdentNode *param = static_cast<TreeIdentNode *>(child.get());
         assert(param->attr_type.has_value());
         types.push_back(*param->attr_type);
     }
