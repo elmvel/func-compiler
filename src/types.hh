@@ -14,6 +14,16 @@ template<class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 struct Type;
+
+/*
+  My justification to this alias is that Types are only made sense to be
+  represented with a shared_ptr, given their weak and dynamic nature.
+  I chose not to follow such abbreviations: s_ptr<Type>, rc<Type> because
+  for my needs, I do not need smart pointer aliases and I prefer them
+  unaliased, just with shared pointers being a little too much to write everywhere.
+
+  If this were to be a larger project, I would reconsider.
+ */
 using TypePtr = std::shared_ptr<Type>;
 
 enum class TypePrimitive
