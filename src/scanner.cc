@@ -26,6 +26,7 @@ std::vector<std::pair<std::string, TokenType>> g_token_keywords = {
     {"then", TokenType::Then},
     {"else", TokenType::Else},
     {"match", TokenType::Match},
+    {"with", TokenType::With},
 
     // Type Keywords
     {"int", TokenType::TyInt},
@@ -59,6 +60,7 @@ auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ct
   case TokenType::Then:     name="Then";     break;
   case TokenType::Else:     name="Else";     break;
   case TokenType::Match:    name="Match";    break;
+  case TokenType::With:     name="With";     break;
   case TokenType::TyInt:    name="int";      break;
   case TokenType::TyString: name="string";   break;
   }

@@ -33,6 +33,8 @@ struct TreeListNode;
 struct TreeBindingNode;
 struct TreeBinopNode;
 struct TreeApplyNode;
+struct TreeMatchNode;
+struct TreeMatchArmNode;
 struct TreeIdentNode;
 struct TreeIntegerNode;
 struct TreeStringNode;
@@ -45,6 +47,8 @@ struct ITreeVisitor
     virtual void visit(TreeBindingNode *node) = 0;
     virtual void visit(TreeBinopNode *node) = 0;
     virtual void visit(TreeApplyNode *node) = 0;
+    virtual void visit(TreeMatchNode *node) = 0;
+    virtual void visit(TreeMatchArmNode *node) = 0;
     virtual void visit(TreeIdentNode *node) = 0;
     virtual void visit(TreeIntegerNode *node) = 0;
     virtual void visit(TreeStringNode *node) = 0;
@@ -107,8 +111,7 @@ struct TreeBindingNode : TreeNode
     {}
     
     virtual ~TreeBindingNode()
-    {
-    }
+    {}
 
     virtual void accept(ITreeVisitor *visitor)
     {
@@ -131,8 +134,7 @@ struct TreeBinopNode : TreeNode
     {}
 
     virtual ~TreeBinopNode()
-    {
-    }
+    {}
 
     virtual void accept(ITreeVisitor *visitor)
     {
@@ -154,8 +156,7 @@ struct TreeApplyNode : TreeNode
     {}
     
     virtual ~TreeApplyNode()
-    {
-    }
+    {}
 
     virtual void accept(ITreeVisitor *visitor)
     {
@@ -169,6 +170,42 @@ struct TreeApplyNode : TreeNode
     std::optional<TypePtr> attr_type;
 };
 
+struct TreeMatchNode : TreeNode
+{
+    TreeMatchNode(std::unique_ptr<TreeNode>& expr, std::vector<std::unique_ptr<TreeNode>> arms)
+        : expr(std::move(expr)), arms(std::move(arms))
+    {}
+
+    virtual ~TreeMatchNode()
+    {}
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    std::unique_ptr<TreeNode> expr;
+    std::vector<std::unique_ptr<TreeNode>> arms;
+};
+
+struct TreeMatchArmNode : TreeNode
+{
+    TreeMatchArmNode(std::unique_ptr<TreeNode>& pattern, std::unique_ptr<TreeNode>& body)
+        : pattern(std::move(pattern)), body(std::move(body))
+    {}
+
+    virtual ~TreeMatchArmNode()
+    {}
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    std::unique_ptr<TreeNode> pattern;
+    std::unique_ptr<TreeNode> body;
+};
+
 struct TreeIdentNode : TreeNode
 {
     TreeIdentNode(const std::string& name)
@@ -176,8 +213,7 @@ struct TreeIdentNode : TreeNode
     {}
 
     virtual ~TreeIdentNode()
-    {
-    }
+    {}
 
     virtual void accept(ITreeVisitor *visitor)
     {
@@ -197,8 +233,7 @@ struct TreeIntegerNode : TreeNode
     {}
 
     virtual ~TreeIntegerNode()
-    {
-    }
+    {}
 
     virtual void accept(ITreeVisitor *visitor)
     {
@@ -218,8 +253,7 @@ struct TreeStringNode : TreeNode
     {}
 
     virtual ~TreeStringNode()
-    {
-    }
+    {}
 
     virtual void accept(ITreeVisitor *visitor)
     {

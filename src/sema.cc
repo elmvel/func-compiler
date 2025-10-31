@@ -6,12 +6,6 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
-/*
-TODO: I need to be able to represent function types
-like `int -> int`, I need to be able to partially apply and
-figure out through analysis that the types will work out
- */
-
 auto fmt::formatter<Type>::format(Type c, fmt::v10::format_context& ctx) const
     -> format_context::iterator {
     std::string name = "<unknown>";
@@ -94,12 +88,6 @@ void TreeSemaVisitor::visit(TreeBinopNode *node)
         return;
     }
 
-    /*
-      For Dr. Z: This saved me debugging time, as I was implicity leaving v_type the same.
-      (but now I must explicitly say the overall type of the visited nodes)
-
-      (I don't know if my custom type exists already, since it is niche [I had no internet!])
-     */
     v_type.write(ltype);
 }
 
@@ -129,6 +117,68 @@ void TreeSemaVisitor::visit(TreeApplyNode *node)
     auto ret_type = fn_type->get_output();
     assert(ret_type.has_value());
     v_type.write(*ret_type);
+}
+
+void TreeSemaVisitor::visit(TreeMatchNode *node)
+{
+    v_type.erase();
+    node->expr->accept(this);
+    TypePtr expr_type = v_type.read_asserted();
+
+    table.enter_scope();
+
+    // First pass, check to see if all the cases match types with the examined expr
+    match_arm_yield_body_type = false;
+    for (auto& arm : node->arms) {
+        v_type.write(expr_type);
+        arm->accept(this);
+        TypePtr arm_type = v_type.read_asserted();
+
+        if (*expr_type != *arm_type) {
+            COMPILER_ERROR("Type mismatch in match case.");
+            COMPILER_NOTE("Match scrutinee was of type `{}`, but had an arm of `{}` instead.",
+                          *expr_type, *arm_type);
+            valid = false;
+        }
+    }
+
+    // Then, check to see that all arm bodies yield the same type
+
+    // TODO: decide how to approach semantic analysis on arm bodies,
+    // or should we simply postpone it due to the unclear nature of
+    // type checking here.
+    
+    // match_arm_yield_body_type = true;
+    // TypePtr common_type = nullptr;
+    // for (auto& arm : node->arms) {
+    //     arm->accept(this);
+    //     TypePtr body_type = v_type.read_asserted();
+
+    //     if (!common_type) {
+    //         common_type = body_type;
+    //         continue;
+    //     }
+
+    //     if (*common_type != *body_type) {
+    //         COMPILER_ERROR("Type mismatch in match case.");
+    //         COMPILER_NOTE("Match result was of type `{}`, but one body was of type `{}` instead.",
+    //                       *common_type, *body_type);
+    //         valid = false;
+    //     }
+    // }
+
+    table.exit_scope();
+}
+
+void TreeSemaVisitor::visit(TreeMatchArmNode *node)
+{
+    if (match_arm_yield_body_type) {
+        // TODO: see above
+        // node->body->accept(this);
+    } else {
+        v_insert.write(true);
+        node->pattern->accept(this);
+    }
 }
 
 void TreeSemaVisitor::visit(TreeIdentNode *node)
@@ -164,13 +214,11 @@ void TreeSemaVisitor::visit(TreeIdentNode *node)
 void TreeSemaVisitor::visit(TreeIntegerNode *node)
 {
     UNUSED(node);
-    // TODO: memory leak
     v_type.write(std::make_shared<Type>(TypePrimitive::Integer));
 }
 
 void TreeSemaVisitor::visit(TreeStringNode *node)
 {
     UNUSED(node);
-    // TODO: memory leak
     v_type.write(std::make_shared<Type>(TypePrimitive::String));
 }

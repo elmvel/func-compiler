@@ -37,6 +37,7 @@ enum class TokenType
     Then,
     Else,
     Match,
+    With,
 
     // Type Keywords
     TyInt,

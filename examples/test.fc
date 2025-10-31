@@ -4,30 +4,9 @@ let sum: int [a: int, b: int] :=
     a + b
 end
 
-let sum: int := 5
-
-let A: int := 1 + 2
-
-let B: int := 2 + 3
-
-let C: string := "Hello world"
-
-let D: int := 1 + "2"
-
-let E: string := "Hello world" + 5
-
-let F: int := a + b + c + 10
-
-let G: int :=
-    let y: int := 5,
-    5 + 10 + y
-
-let H: int := y + 10
-
-let I: int := sum 1 2
-
-let J: int := mul 2 3
-
-let K: int := sum 1 "2"
-
-let L: int := sum "1" 2
+let factorial: int [x: int] :=
+    match x with
+        0 -> 1
+        n -> n * factorial (n - 1)
+    end
+end

@@ -204,6 +204,26 @@ std::unique_ptr<TreeNode> Parser::parse_primary_expr(bool apply)
         }
 
         return lhs;
+    } else if (has_token(TokenType::Match)) {
+        // Match Case
+        next_token();
+
+        std::unique_ptr<TreeNode> expr = parse_expr(0);
+        match(TokenType::With);
+        
+        // Parse Arms
+        std::vector<std::unique_ptr<TreeNode>> arms;
+        while (!has_token(TokenType::End)) {
+            // TODO: make sure this is a pattern
+            std::unique_ptr<TreeNode> pattern = parse_expr(0);
+            match(TokenType::Arrow);
+            std::unique_ptr<TreeNode> body = parse_expr(0);
+
+            arms.push_back(std::make_unique<TreeMatchArmNode>(pattern, body));
+        }
+        match(TokenType::End);
+
+        return std::make_unique<TreeMatchNode>(expr, std::move(arms));
     } else if (has_token(TokenType::Integer)) {
         // Int Literal
         return match(TokenType::Integer, [&](){

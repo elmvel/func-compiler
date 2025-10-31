@@ -62,6 +62,20 @@ void TreeSymtabVisitor::visit(TreeBinopNode *node)
     node->rhs->accept(this);
 }
 
+void TreeSymtabVisitor::visit(TreeMatchNode *node)
+{
+    node->expr->accept(this);
+    for (auto& arm : node->arms) {
+        arm->accept(this);
+    }
+}
+
+void TreeSymtabVisitor::visit(TreeMatchArmNode *node)
+{
+    node->pattern->accept(this);
+    node->body->accept(this);
+}
+
 void TreeSymtabVisitor::visit(TreeApplyNode *node)
 {
     node->func->accept(this);

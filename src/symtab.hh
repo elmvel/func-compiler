@@ -118,6 +118,8 @@ struct TreeSymtabVisitor : ITreeVisitor
     virtual void visit(TreeBindingNode *node);
     virtual void visit(TreeBinopNode *node);
     virtual void visit(TreeApplyNode *node);
+    virtual void visit(TreeMatchNode *node);
+    virtual void visit(TreeMatchArmNode *node);
     virtual void visit(TreeIdentNode *node);
     virtual void visit(TreeIntegerNode *node);
     virtual void visit(TreeStringNode *node);
