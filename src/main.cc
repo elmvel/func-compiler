@@ -12,6 +12,9 @@
 #include "parser.hh"
 #include "symtab.hh"
 #include "sema.hh"
+#include "lambda.hh"
+#include "lambda_debug.hh"
+#include "high_to_elc.hh"
 
 // #define ONLY_SCAN
 // #define ONLY_PARSE
@@ -242,6 +245,28 @@ int main()
     fmt::println("    Enriched Lambda Calculus Codegen    ");
     fmt::println("========================================");
     {
+#define MKLC(type, ...) std::make_shared<type>(__VA_ARGS__)
+        // Testing ELC IR
+        LCNodePtr body   = MKLC(LCIntNode, 67);
+        LCNodePtr lambda = MKLC(LCLambdaNode, "x", body);
+
+        LCNodePtr boole  = MKLC(LCBoolNode, false);
+        LCNodePtr apply  = MKLC(LCApplyNode, lambda, boole);
+
+        LCNodePtr def    = MKLC(LCDefNode, LCLetDefs {{"y", MKLC(LCIntNode, 1)}}, MKLC(LCBoolNode, false), true);
+
+        LCTraceVisitor visitor;
+        lambda->accept(&visitor);
+        fmt::println("{}", visitor.v_text.read_asserted());
+
+        apply->accept(&visitor);
+        fmt::println("{}", visitor.v_text.read_asserted());
+
+        def->accept(&visitor);
+        fmt::println("{}", visitor.v_text.read_asserted());
+#undef MKLC
+    }
+    {
         Scanner scanner {*file_content};
         Parser parser {scanner};
         std::unique_ptr<TreeNode> root = parser.parse_program();
@@ -257,6 +282,10 @@ int main()
         if (!visitor_sema.valid) COMPILER_TERM();
 
         fmt::println("Passed Semantic Analysis!");
+
+        TreeToELCVisitor visitor_elc;
+        root->accept(&visitor_elc);
+        
         fmt::println("TODO: Translate the AST to Enriched Lambda Calculus");
     }
 #else
