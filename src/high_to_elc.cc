@@ -4,8 +4,36 @@
 
 void TreeToELCVisitor::visit(TreeSeqNode *node)
 {
-    (void)node;
-    COMPILER_ERROR_TERM("TODO: High->ELC for TreeSeqNode");
+    /*
+      Program:
+      Definition1
+      ...
+      DefinitionN
+      -----------
+      Expression
+      
+      |
+      V
+
+      letrec
+        TD[[ Definition1 ]]
+        ...
+        TD[[ DefinitionN ]]
+      in
+        TE[[ Expression ]]
+     */
+
+    std::vector<LCNodePtr> elc_children;
+    for (auto& child : node->children) {
+        child->accept(this);
+        auto [var, elc_child] = v_elc_let.read_asserted();
+        elc_children.push_back(std::make_shared<LCDefNode>(var, elc_child));
+    }
+
+    // TODO: find main
+    LCNodePtr main_expr = std::make_shared<LCIntNode>(123);
+
+    v_elc.write(std::make_shared<LCLetNode>(elc_children, main_expr, RECURSIVE));
 }
 
 void TreeToELCVisitor::visit(TreeParamsNode *node)
@@ -22,8 +50,39 @@ void TreeToELCVisitor::visit(TreeListNode *node)
 
 void TreeToELCVisitor::visit(TreeBindingNode *node)
 {
-    (void)node;
-    COMPILER_ERROR_TERM("TODO: High->ELC for TreeBindingNode");
+    /*
+      let x: int := 5,
+      let y: int := 6,
+      x + y
+     */
+    
+    /*
+      TD[[ let v: T := E ]] == v = TE[[ E ]]
+     */
+    if (node->params != nullptr) {
+        // TODO: simple function definition translation
+        // node->params->accept(this);
+    }
+
+    node->body->accept(this);
+    LCNodePtr body = v_elc.read_asserted();
+
+    LCNodePtr def = std::make_shared<LCDefNode>(node->id, body);
+
+    if (node->next != nullptr) {
+        node->next->accept(this);
+        LCNodePtr in_expr = v_elc.read_asserted();
+
+        // TODO: recursive by default
+        LCNodePtr let = std::make_shared<LCLetNode>(std::vector<LCNodePtr> {def}, in_expr, RECURSIVE);
+        v_elc.write(let);
+        v_elc_let.write({node->id, let});
+    } else {
+        // COMPILER_ERROR_TERM("No next node after a let binding, this might trigger for globals but it should be disallowed");
+        LCNodePtr let = std::make_shared<LCLetNode>(std::vector<LCNodePtr> {def}, nullptr, RECURSIVE);
+        v_elc.write(let);
+        v_elc_let.write({node->id, let});
+    }
 }
 
 std::string token_to_builtin(TokenType token)
@@ -39,6 +98,9 @@ std::string token_to_builtin(TokenType token)
 
 void TreeToELCVisitor::visit(TreeBinopNode *node)
 {
+    /*
+      TE[[ E1 <infix> E2 ]] == TE[[ <infix> ]] TE[[ E1 ]] TE[[ E2 ]]
+     */
     node->lhs->accept(this);
     LCNodePtr elc_lhs = v_elc.read_asserted();
     node->rhs->accept(this);
@@ -52,6 +114,9 @@ void TreeToELCVisitor::visit(TreeBinopNode *node)
 
 void TreeToELCVisitor::visit(TreeApplyNode *node)
 {
+    /*
+      TE[[ E1 E2 ]] == TE[[ E1 ]] TE[[ E2 ]]
+     */
     node->func->accept(this);
     LCNodePtr elc_fun = v_elc.read_asserted();
     node->arg->accept(this);
@@ -73,11 +138,17 @@ void TreeToELCVisitor::visit(TreeMatchArmNode *node)
 
 void TreeToELCVisitor::visit(TreeIdentNode *node)
 {
+    /*
+      TE[[ var/const ]] == var/const
+     */
     v_elc.write(std::make_shared<LCConstantNode>(node->name));
 }
 
 void TreeToELCVisitor::visit(TreeIntegerNode *node)
 {
+    /*
+      TE[[ 5 ]] == 5
+     */
     v_elc.write(std::make_shared<LCIntNode>(node->value));
 }
 

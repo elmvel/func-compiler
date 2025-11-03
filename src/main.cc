@@ -275,6 +275,7 @@ int main()
     fmt::println("    Enriched Lambda Calculus Codegen    ");
     fmt::println("========================================");
     {
+        fmt::println("=== TESTING ELC DEBUG PRINTING ===");
 #define MKLC(type, ...) std::make_shared<type>(__VA_ARGS__)
         // Testing ELC IR
         LCNodePtr body   = MKLC(LCIntNode, 67);
@@ -283,7 +284,8 @@ int main()
         LCNodePtr boole  = MKLC(LCBoolNode, false);
         LCNodePtr apply  = MKLC(LCApplyNode, lambda, boole);
 
-        LCNodePtr def    = MKLC(LCDefNode, LCLetDefs {{"y", MKLC(LCIntNode, 1)}}, MKLC(LCBoolNode, false), true);
+        LCNodePtr def = MKLC(LCDefNode, "y", MKLC(LCIntNode, 1));
+        LCNodePtr let = MKLC(LCLetNode, std::vector<LCNodePtr> {def}, MKLC(LCBoolNode, false), true);
 
         LCTraceVisitor visitor;
         lambda->accept(&visitor);
@@ -292,9 +294,10 @@ int main()
         apply->accept(&visitor);
         fmt::println("{}", visitor.v_text.read_asserted());
 
-        def->accept(&visitor);
+        let->accept(&visitor);
         fmt::println("{}", visitor.v_text.read_asserted());
 #undef MKLC
+        fmt::println("==================================");
     }
     {
         Scanner scanner {*file_content};

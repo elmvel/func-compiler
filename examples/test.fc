@@ -4,6 +4,12 @@ let sum: int [a: int, b: int] :=
     a + b
 end
 
+let bar: int [x: int, y: int] :=
+    let a: int := 1,
+    let b: int := 2,
+    (a * x) + (b * y)
+end
+
 let factorial: int [x: int] :=
     match x with
         0 -> 1

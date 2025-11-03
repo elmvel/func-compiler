@@ -24,6 +24,9 @@ struct TreeToELCVisitor : ITreeVisitor
     virtual void visit(TreeStringNode *node);
 
     VisitValue<LCNodePtr> v_elc;
+
+    // When recursing, we would like to know the binding name as well as the expression
+    VisitValue<std::pair<std::string, LCNodePtr>> v_elc_let;
 };
 
 #endif // HIGH_TO_ELC_HH_

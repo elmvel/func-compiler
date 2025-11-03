@@ -43,7 +43,6 @@
 
 struct LCNode;
 using LCNodePtr = std::shared_ptr<LCNode>;
-using LCLetDefs = std::vector<std::pair<std::string, LCNodePtr>>;
 
 #define RECURSIVE true
 #define NONRECURSIVE false
@@ -51,6 +50,7 @@ using LCLetDefs = std::vector<std::pair<std::string, LCNodePtr>>;
 struct LCApplyNode;
 struct LCLambdaNode;
 struct LCDefNode;
+struct LCLetNode;
 struct LCIntNode;
 struct LCBoolNode;
 struct LCConstantNode;
@@ -60,6 +60,7 @@ struct ILCVisitor
     virtual void visit(LCApplyNode *node) = 0;
     virtual void visit(LCLambdaNode *node) = 0;
     virtual void visit(LCDefNode *node) = 0;
+    virtual void visit(LCLetNode *node) = 0;
     virtual void visit(LCIntNode *node) = 0;
     virtual void visit(LCBoolNode *node) = 0;
     virtual void visit(LCConstantNode *node) = 0;
@@ -121,13 +122,31 @@ struct LCLambdaNode : LCNode
 };
 
 /*
+  The 'v = B' in (let v = B in E)
+ */
+struct LCDefNode : LCNode
+{
+    LCDefNode(const std::string& var, LCNodePtr body)
+        : var(var), body(body)
+    {}
+
+    virtual void accept(ILCVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+    
+    std::string var;
+    LCNodePtr body;
+};
+
+/*
   Lambda Calculus Representation:
   (let v = B in E)
   (let x = 3 in (* x x))
  */
-struct LCDefNode : LCNode
+struct LCLetNode : LCNode
 {
-    LCDefNode(const LCLetDefs& defs, LCNodePtr expr, bool recursive)
+    LCLetNode(const std::vector<LCNodePtr>& defs, LCNodePtr expr, bool recursive)
         : definitions(defs), expr(expr), recursive(recursive)
     {}
 
@@ -136,7 +155,7 @@ struct LCDefNode : LCNode
         visitor->visit(this);
     }
     
-    std::vector<std::pair<std::string, LCNodePtr>> definitions;
+    std::vector<LCNodePtr> definitions;
     LCNodePtr expr;
     bool recursive;
 };

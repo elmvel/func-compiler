@@ -22,13 +22,22 @@ void LCTraceVisitor::visit(LCLambdaNode *node)
 
 void LCTraceVisitor::visit(LCDefNode *node)
 {
+    // @remove
+    // node->var->accept(this);
+    // std::string traced_var = v_text.read_asserted();
+    node->body->accept(this);
+    std::string traced_body = v_text.read_asserted();
+    v_text.write(fmt::format("{} = {}", node->var, traced_body));
+}
+
+void LCTraceVisitor::visit(LCLetNode *node)
+{
     std::string defs = "";
     for (size_t i = 0; i < node->definitions.size(); ++i) {
         if (i > 0) defs += ";";
-        auto& [var, body] = node->definitions[i];
-        body->accept(this);
-        std::string traced_body = v_text.read_asserted();
-        defs += fmt::format("{} = {}", var, traced_body);
+        node->definitions[i]->accept(this);
+        std::string def = v_text.read_asserted();
+        defs += def;
     }
     node->expr->accept(this);
     std::string traced_expr = v_text.read_asserted();
