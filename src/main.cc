@@ -164,6 +164,36 @@ struct TreeTraceVisitor : ITreeVisitor
         text = local_text;
     }
 
+    virtual void visit(TreeMatchNode *node)
+    {
+        std::string local_text = "Match(";
+
+        node->expr->accept(this);
+        local_text.append(text);
+        for (auto& node : node->arms) {
+            local_text.append(", ");
+            node->accept(this);
+            local_text.append(text);
+        }
+        local_text.append(")");
+        
+
+        text = local_text;
+    }
+
+    virtual void visit(TreeMatchArmNode *node)
+    {
+        std::string local_text = "";
+        
+        node->pattern->accept(this);
+        local_text.append(text);
+        local_text.append(" => ");
+        node->body->accept(this);
+        local_text.append(text);
+
+        text = local_text;
+    }
+
     virtual void visit(TreeIdentNode *node)
     {
         text = node->name;
