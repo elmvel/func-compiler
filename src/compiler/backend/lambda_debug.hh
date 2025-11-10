@@ -1,7 +1,7 @@
 #ifndef LAMBDA_DEBUG_HH_
 #define LAMBDA_DEBUG_HH_
 
-#include "sema.hh"
+#include "../frontend/sema.hh"
 #include "lambda.hh"
 
 struct LCTraceVisitor : ILCVisitor

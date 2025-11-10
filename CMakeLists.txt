@@ -20,13 +20,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
-add_executable(fc src/main.cc
-                  src/scanner.cc
-                  src/parser.cc
-                  src/symtab.cc
-                  src/sema.cc
-                  src/types.cc
-                  src/lambda_debug.cc
-                  src/high_to_elc.cc)
+add_executable(fc src/compiler/main.cc
+                  src/compiler/frontend/scanner.cc
+                  src/compiler/frontend/parser.cc
+                  src/compiler/frontend/symtab.cc
+                  src/compiler/frontend/sema.cc
+                  src/compiler/frontend/types.cc
+                  src/compiler/backend/lambda_debug.cc
+                  src/compiler/backend/high_to_elc.cc)
 
 target_link_libraries(fc fmt::fmt)

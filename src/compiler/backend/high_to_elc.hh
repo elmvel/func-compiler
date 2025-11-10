@@ -2,7 +2,7 @@
 #define HIGH_TO_ELC_HH_
 
 // TODO: VisitValue does not need to be in sema.hh
-#include "sema.hh"
+#include "../frontend/sema.hh"
 #include "lambda.hh"
 
 struct TreeToELCVisitor : ITreeVisitor

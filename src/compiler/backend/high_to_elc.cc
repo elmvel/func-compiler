@@ -1,6 +1,6 @@
 #include "high_to_elc.hh"
 
-#include "common.hh"
+#include "../common.hh"
 
 void TreeToELCVisitor::visit(TreeSeqNode *node)
 {

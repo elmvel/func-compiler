@@ -8,13 +8,13 @@
 #include <fmt/std.h>
 
 #include "common.hh"
-#include "scanner.hh"
-#include "parser.hh"
-#include "symtab.hh"
-#include "sema.hh"
-#include "lambda.hh"
-#include "lambda_debug.hh"
-#include "high_to_elc.hh"
+#include "frontend/scanner.hh"
+#include "frontend/parser.hh"
+#include "frontend/symtab.hh"
+#include "frontend/sema.hh"
+#include "backend/lambda.hh"
+#include "backend/lambda_debug.hh"
+#include "backend/high_to_elc.hh"
 
 // #define ONLY_SCAN
 // #define ONLY_PARSE
