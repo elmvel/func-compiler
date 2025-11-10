@@ -284,17 +284,18 @@ TypePtr Parser::parse_type()
 //                              Private Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void Parser::match(TokenType type)
+void Parser::match(TokenType expected)
 {
     if (m_head_token.has_value()) {
-        if (m_head_token.value() == type) {
+        if (m_head_token.value() == expected) {
             next_token();
         } else {
             // TODO: allow for error recovery in some cases if time allows
-            COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got {}.", type);
+            TokenType got = m_head_token.value();
+            COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token `{}` but got `{}`.", expected, got);
         }
     } else {
-        COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got EOF.");
+        COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token `{}` but got EOF.");
     }
 }
 

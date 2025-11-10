@@ -44,6 +44,18 @@ void LCTraceVisitor::visit(LCLetNode *node)
     v_text.write(fmt::format("(let {} in {})", defs, traced_expr));
 }
 
+void LCTraceVisitor::visit(LCCaseNode *node)
+{
+    (void)node;
+    COMPILER_ERROR_TERM("TODO: tracing of case nodes");
+}
+
+void LCTraceVisitor::visit(LCCaseArmNode *node)
+{
+    (void)node;
+    COMPILER_ERROR_TERM("TODO: tracing of case nodes");
+}
+
 void LCTraceVisitor::visit(LCIntNode *node)
 {
     v_text.write(fmt::format("{}", node->value));

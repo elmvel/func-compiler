@@ -51,6 +51,8 @@ struct LCApplyNode;
 struct LCLambdaNode;
 struct LCDefNode;
 struct LCLetNode;
+struct LCCaseNode;
+struct LCCaseArmNode;
 struct LCIntNode;
 struct LCBoolNode;
 struct LCConstantNode;
@@ -61,6 +63,8 @@ struct ILCVisitor
     virtual void visit(LCLambdaNode *node) = 0;
     virtual void visit(LCDefNode *node) = 0;
     virtual void visit(LCLetNode *node) = 0;
+    virtual void visit(LCCaseNode *node) = 0;
+    virtual void visit(LCCaseArmNode *node) = 0;
     virtual void visit(LCIntNode *node) = 0;
     virtual void visit(LCBoolNode *node) = 0;
     virtual void visit(LCConstantNode *node) = 0;
@@ -158,6 +162,53 @@ struct LCLetNode : LCNode
     std::vector<LCNodePtr> definitions;
     LCNodePtr expr;
     bool recursive;
+};
+
+/*
+  Lambda Calculus Representation:
+
+  Nonsensical example
+  (case t of
+      Leaf n       => Leaf n
+      Branch t1 t2 => Leaf 0
+  )
+ */
+struct LCCaseNode : LCNode
+{
+    LCCaseNode(LCNodePtr scrutinee, const std::vector<LCNodePtr>& arms)
+        : scrutinee(scrutinee), arms(arms)
+    {}
+
+    virtual void accept(ILCVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    LCNodePtr scrutinee;
+    std::vector<LCNodePtr> arms;
+};
+
+/*
+  Lambda Calculus Representation:
+
+  Nonsensical example
+  case t of
+      (Leaf n      => Leaf n) <---
+      Branch t1 t2 => Leaf 0
+ */
+struct LCCaseArmNode : LCNode
+{
+    LCCaseArmNode(LCNodePtr pattern, LCNodePtr body)
+        : pattern(pattern), body(body)
+    {}
+
+    virtual void accept(ILCVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    LCNodePtr pattern;
+    LCNodePtr body;
 };
 
 /*

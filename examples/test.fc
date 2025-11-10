@@ -10,9 +10,15 @@ let bar: int [x: int, y: int] :=
     (a * x) + (b * y)
 end
 
+(*
 let factorial: int [x: int] :=
     match x with
         0 -> 1
         n -> n * factorial (n - 1)
     end
+end
+*)
+
+let main: int [] :=
+    sum (3) (7) 
 end

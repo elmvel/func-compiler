@@ -10,7 +10,7 @@ void TreeToELCVisitor::visit(TreeSeqNode *node)
       ...
       DefinitionN
       -----------
-      Expression
+      Main Expression
       
       |
       V
@@ -20,18 +20,26 @@ void TreeToELCVisitor::visit(TreeSeqNode *node)
         ...
         TD[[ DefinitionN ]]
       in
-        TE[[ Expression ]]
+        TE[[ Main Expression ]]
      */
+
+    LCNodePtr main_expr = nullptr;
 
     std::vector<LCNodePtr> elc_children;
     for (auto& child : node->children) {
         child->accept(this);
         auto [var, elc_child] = v_elc_let.read_asserted();
-        elc_children.push_back(std::make_shared<LCDefNode>(var, elc_child));
+
+        if (var == "main") {
+            main_expr = elc_child;
+        } else {
+            elc_children.push_back(std::make_shared<LCDefNode>(var, elc_child));
+        }
     }
 
-    // TODO: find main
-    LCNodePtr main_expr = std::make_shared<LCIntNode>(123);
+    if (!main_expr) {
+        COMPILER_ERROR_TERM("Function binding 'main' not found.");
+    }
 
     v_elc.write(std::make_shared<LCLetNode>(elc_children, main_expr, RECURSIVE));
 }
@@ -126,6 +134,24 @@ void TreeToELCVisitor::visit(TreeApplyNode *node)
 
 void TreeToELCVisitor::visit(TreeMatchNode *node)
 {
+    /*
+      This one is harder, as we have a slight deviation from Miranda.
+
+      Miranda:
+
+      factorial 0 = 1
+      factorial n = n * factorial (n - 1)
+
+      My language:
+
+      let factorial: int [x: int] :=
+          match x with
+              0 -> 1
+              n -> n * factorial (n - 1)
+          end
+      end
+     */
+    
     (void)node;
     COMPILER_ERROR_TERM("TODO: High->ELC for TreeMatchNode");
 }

@@ -274,6 +274,7 @@ int main()
     fmt::println("========================================");
     fmt::println("    Enriched Lambda Calculus Codegen    ");
     fmt::println("========================================");
+#if 0
     {
         fmt::println("=== TESTING ELC DEBUG PRINTING ===");
 #define MKLC(type, ...) std::make_shared<type>(__VA_ARGS__)
@@ -299,6 +300,7 @@ int main()
 #undef MKLC
         fmt::println("==================================");
     }
+#endif
     {
         Scanner scanner {*file_content};
         Parser parser {scanner};
@@ -314,12 +316,10 @@ int main()
 
         if (!visitor_sema.valid) COMPILER_TERM();
 
-        fmt::println("Passed Semantic Analysis!");
-
         TreeToELCVisitor visitor_elc;
         root->accept(&visitor_elc);
         
-        fmt::println("TODO: Translate the AST to Enriched Lambda Calculus");
+        fmt::println("Finished Pass: lowering to ELC.");
     }
 #else
     fmt::println("TODO: Full pass of compiler");
