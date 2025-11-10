@@ -15,6 +15,17 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 struct Type;
 
+/*
+  My justification to this alias is that Types are only made sense to be
+  represented with a shared_ptr, given their weak and dynamic nature.
+  I chose not to follow such abbreviations: s_ptr<Type>, rc<Type> because
+  for my needs, I do not need smart pointer aliases and I prefer them
+  unaliased, just with shared pointers being a little too much to write everywhere.
+
+  If this were to be a larger project, I would reconsider.
+ */
+using TypePtr = std::shared_ptr<Type>;
+
 enum class TypePrimitive
 {
     Integer,
@@ -23,15 +34,15 @@ enum class TypePrimitive
 
 struct TypeFunction
 {
-    TypeFunction(Type *input, Type *output)
+    TypeFunction(TypePtr input, TypePtr output)
         : input(input), output(output)
     {
         assert(input != nullptr);
         assert(output != nullptr);
     }
     
-    Type *input;
-    Type *output;
+    TypePtr input;
+    TypePtr output;
 };
 
 struct Type
@@ -44,7 +55,7 @@ struct Type
         : storage(fn)
     {}
 
-    std::optional<Type *> get_input()
+    std::optional<TypePtr> get_input()
     {
         const TypeFunction *func = std::get_if<TypeFunction>(&storage);
         if (func == nullptr) return {};
@@ -52,7 +63,7 @@ struct Type
         return func->input;
     }
 
-    std::optional<Type *> get_output()
+    std::optional<TypePtr> get_output()
     {
         const TypeFunction *func = std::get_if<TypeFunction>(&storage);
         if (func == nullptr) return {};
@@ -111,6 +122,6 @@ template <> struct fmt::formatter<Type>: formatter<std::string> {
 
 struct TreeParamsNode;
 
-std::pair<Type *, size_t> make_function_type(TreeParamsNode *node, Type *ret_type);
+std::pair<TypePtr, size_t> make_function_type(TreeParamsNode *node, TypePtr ret_type);
 
 #endif // TYPES_HH_

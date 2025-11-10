@@ -14,24 +14,24 @@ struct Declaration
         : id(id), type(), arity()
     {}
 
-    Declaration(const std::string& id, Type *type)
+    Declaration(const std::string& id, TypePtr type)
         : id(id), type(type), arity()
     {}
 
-    Declaration(const std::string& id, std::optional<Type *> type)
+    Declaration(const std::string& id, std::optional<TypePtr> type)
         : id(id), type(type), arity()
     {}
 
-    Declaration(const std::string& id, Type *type, size_t arity)
+    Declaration(const std::string& id, TypePtr type, size_t arity)
         : id(id), type(type), arity(arity)
     {}
 
-    Declaration(const std::string& id, std::optional<Type *> type, size_t arity)
+    Declaration(const std::string& id, std::optional<TypePtr> type, size_t arity)
         : id(id), type(type), arity(arity)
     {}
     
     std::string id;
-    std::optional<Type *> type;
+    std::optional<TypePtr> type;
     std::optional<size_t> arity;
     // SourceLocation location;
 };
@@ -118,6 +118,8 @@ struct TreeSymtabVisitor : ITreeVisitor
     virtual void visit(TreeBindingNode *node);
     virtual void visit(TreeBinopNode *node);
     virtual void visit(TreeApplyNode *node);
+    virtual void visit(TreeMatchNode *node);
+    virtual void visit(TreeMatchArmNode *node);
     virtual void visit(TreeIdentNode *node);
     virtual void visit(TreeIntegerNode *node);
     virtual void visit(TreeStringNode *node);

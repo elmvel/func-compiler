@@ -18,24 +18,24 @@ std::map<TokenType, std::pair<int, Assoc>> g_binary_ops = {
     {TokenType::Div, {1, Assoc::Left}},
 };
 
-TreeNode *Parser::parse_program()
+std::unique_ptr<TreeNode> Parser::parse_program()
 {
-    std::vector<TreeNode *> nodes;
+    std::vector<std::unique_ptr<TreeNode>> nodes;
     m_head_token = m_scanner.next_token();
     
     while (m_head_token.has_value()) {
-        TreeNode *binding = parse_binding();
-        nodes.push_back(binding);
+        std::unique_ptr<TreeNode> binding = parse_binding();
+        nodes.push_back(std::move(binding));
     }
 
-    return new TreeSeqNode(nodes);
+    return std::make_unique<TreeSeqNode>(std::move(nodes));
 }
 
 /*
 <binding> ::= LET <id> [":" <type>] <param-list> ":=" <body> END
             | LET <id> [":" <type>] ":=" <expr>
  */
-TreeNode *Parser::parse_binding()
+std::unique_ptr<TreeNode> Parser::parse_binding()
 {
     bool require_end = false;
     
@@ -45,14 +45,14 @@ TreeNode *Parser::parse_binding()
         return m_scanner.lexeme();
     });
 
-    std::optional<Type *> type_hint;
+    std::optional<TypePtr> type_hint;
     if (has_token(TokenType::Colon)) {
         next_token();
 
         type_hint = parse_type();
     }
 
-    TreeNode *params = NULL;
+    std::unique_ptr<TreeNode> params {};
     if (has_token(TokenType::LBracket)) {
         // Get parameter list
         params = parse_param_list();
@@ -60,10 +60,10 @@ TreeNode *Parser::parse_binding()
     }
 
     match(TokenType::Assign);
-    TreeNode *body = parse_body();
+    std::unique_ptr<TreeNode> body = parse_body();
     if (require_end) match(TokenType::End);
 
-    auto node = new TreeBindingNode(name, body, params);
+    auto node = std::make_unique<TreeBindingNode>(name, body, params);
     if (type_hint.has_value()) {
         node->attr_type = *type_hint;
     }
@@ -73,17 +73,17 @@ TreeNode *Parser::parse_binding()
 /*
 <param-list> ::= "[" <param-seq> "]"
  */
-TreeNode *Parser::parse_param_list()
+std::unique_ptr<TreeNode> Parser::parse_param_list()
 {
     match(TokenType::LBracket);
 
     // Early return for empty params
     if (has_token(TokenType::RBracket)) {
         match(m_head_token.value());
-        return new TreeParamsNode({});
+        return std::make_unique<TreeParamsNode>(std::vector<std::unique_ptr<TreeNode>> {});
     }
     
-    TreeNode *params = parse_param_seq();
+    std::unique_ptr<TreeNode> params = parse_param_seq();
     match(TokenType::RBracket);
     return params;
 }
@@ -91,55 +91,57 @@ TreeNode *Parser::parse_param_list()
 /*
 <param-seq>  ::= ID [":" <type>] "," <param-seq> | ID
  */
-TreeNode *Parser::parse_param_seq()
+std::unique_ptr<TreeNode> Parser::parse_param_seq()
 {
-    std::vector<TreeNode *> nodes;
+    std::vector<std::unique_ptr<TreeNode>> nodes;
     
-    TreeNode *ident = match(TokenType::Id, [&](){
-        return new TreeIdentNode(m_scanner.lexeme());
+    std::unique_ptr<TreeNode> ident = match(TokenType::Id, [&](){
+        return std::make_unique<TreeIdentNode>(m_scanner.lexeme());
     });
 
     if (has_token(TokenType::Colon)) {
         next_token();
 
-        Type *type = parse_type();
-        static_cast<TreeIdentNode *>(ident)->attr_type = type;
+        TypePtr type = parse_type();
+        static_cast<TreeIdentNode *>(ident.get())->attr_type = type;
     }
 
-    nodes.push_back(ident);
+    nodes.push_back(std::move(ident));
 
     while (has_token(TokenType::Comma)) {
         next_token();
 
-        TreeNode *ident = match(TokenType::Id, [&](){
-            return new TreeIdentNode(m_scanner.lexeme());
+        std::unique_ptr<TreeNode> ident = match(TokenType::Id, [&](){
+            return std::make_unique<TreeIdentNode>(m_scanner.lexeme());
         });
 
         if (has_token(TokenType::Colon)) {
             next_token();
 
-            Type *type = parse_type();
-            static_cast<TreeIdentNode *>(ident)->attr_type = type;
+            TypePtr type = parse_type();
+            static_cast<TreeIdentNode *>(ident.get())->attr_type = type;
         }
 
-        nodes.push_back(ident);
+        nodes.push_back(std::move(ident));
     }
 
-    return new TreeParamsNode(nodes);
+    return std::make_unique<TreeParamsNode>(std::move(nodes));
 }
 
 /*
 <body> ::= <binding> "," <body> | <expr>
  */
-TreeNode *Parser::parse_body()
+std::unique_ptr<TreeNode> Parser::parse_body()
 {
     // Ad Hoc, we cheat by checking for 'Let'
     if (has_token(TokenType::Let)) {
-        TreeBindingNode *binding = static_cast<TreeBindingNode *>(parse_binding());
+        std::unique_ptr<TreeNode> binding = parse_binding();
+        TreeBindingNode *alias_binding = static_cast<TreeBindingNode *>(binding.get());
+        
         match(TokenType::Comma);
-        TreeNode *body = parse_body();
+        std::unique_ptr<TreeNode> body = parse_body();
 
-        binding->next = body;
+        alias_binding->next = std::move(body);
         
         return binding;
     } else {
@@ -147,9 +149,9 @@ TreeNode *Parser::parse_body()
     }
 }
 
-TreeNode *Parser::parse_expr(int precedence)
+std::unique_ptr<TreeNode> Parser::parse_expr(int precedence)
 {
-    TreeNode *lhs = parse_primary_expr(true);
+    std::unique_ptr<TreeNode> lhs = parse_primary_expr(true);
 
     // While the next token is a binary operator
     while (m_head_token.has_value()) {
@@ -165,8 +167,8 @@ TreeNode *Parser::parse_expr(int precedence)
             ++next_prec;
         }
 
-        TreeNode *rhs = parse_expr(next_prec);
-        lhs = new TreeBinopNode(op, lhs, rhs);
+        std::unique_ptr<TreeNode> rhs = parse_expr(next_prec);
+        lhs = std::make_unique<TreeBinopNode>(op, lhs, rhs);
     }
 
     return lhs;
@@ -181,36 +183,56 @@ bool Parser::could_start_primary() {
     return false;
 }
 
-TreeNode *Parser::parse_primary_expr(bool apply)
+std::unique_ptr<TreeNode> Parser::parse_primary_expr(bool apply)
 {
     if (has_token(TokenType::LParen)) {
         match(m_head_token.value());
-        TreeNode *expr = parse_expr(0);
+        std::unique_ptr<TreeNode> expr = parse_expr(0);
         match(TokenType::RParen);
         return expr;
     } else if (has_token(TokenType::Id)) {
-        TreeNode *lhs = match(TokenType::Id, [&](){
-            return new TreeIdentNode(m_scanner.lexeme());
+        std::unique_ptr<TreeNode> lhs = match(TokenType::Id, [&](){
+            return std::make_unique<TreeIdentNode>(m_scanner.lexeme());
         });
 
         // IMPORTANT: This could be a function application
         if (apply) {
             while (could_start_primary()) {
-                TreeNode *rhs = parse_primary_expr(false);
-                lhs = new TreeApplyNode(lhs, rhs);
+                std::unique_ptr<TreeNode> rhs = parse_primary_expr(false);
+                lhs = std::make_unique<TreeApplyNode>(std::move(lhs), std::move(rhs));
             }
         }
 
         return lhs;
+    } else if (has_token(TokenType::Match)) {
+        // Match Case
+        next_token();
+
+        std::unique_ptr<TreeNode> expr = parse_expr(0);
+        match(TokenType::With);
+        
+        // Parse Arms
+        std::vector<std::unique_ptr<TreeNode>> arms;
+        while (!has_token(TokenType::End)) {
+            // TODO: make sure this is a pattern
+            std::unique_ptr<TreeNode> pattern = parse_expr(0);
+            match(TokenType::Arrow);
+            std::unique_ptr<TreeNode> body = parse_expr(0);
+
+            arms.push_back(std::make_unique<TreeMatchArmNode>(pattern, body));
+        }
+        match(TokenType::End);
+
+        return std::make_unique<TreeMatchNode>(expr, std::move(arms));
     } else if (has_token(TokenType::Integer)) {
         // Int Literal
         return match(TokenType::Integer, [&](){
-            return new TreeIntegerNode(m_scanner.number());
+            return std::make_unique<TreeIntegerNode>(m_scanner.number());
         });
     } else if (has_token(TokenType::String)) {
         // String Literal
         return match(TokenType::String, [&](){
-            return new TreeStringNode(m_scanner.lexeme());
+            return std::make_unique<TreeStringNode>(m_scanner.lexeme());
         });
     } else {
         if (!m_head_token.has_value()) {
@@ -221,22 +243,22 @@ TreeNode *Parser::parse_primary_expr(bool apply)
     }
 }
 
-Type *Parser::parse_type_primitive()
+TypePtr Parser::parse_type_primitive()
 {
     if (has_token(TokenType::LParen)) {
         next_token();
         
-        Type *type = parse_type();
+        TypePtr type = parse_type();
         match(TokenType::RParen);
         return type;
     } else if (has_token(TokenType::TyInt)) {
         next_token();
 
-        return new Type(TypePrimitive::Integer);
+        return std::make_shared<Type>(TypePrimitive::Integer);
     } else if (has_token(TokenType::TyString)) {
         next_token();
 
-        return new Type(TypePrimitive::String);
+        return std::make_shared<Type>(TypePrimitive::String);
     } else {
         if (!m_head_token.has_value()) {
             COMPILER_ERROR_TERM("Could not parse a type: EOF.");
@@ -246,14 +268,14 @@ Type *Parser::parse_type_primitive()
     }
 }
 
-Type *Parser::parse_type()
+TypePtr Parser::parse_type()
 {
-    Type *lhs = parse_type_primitive();
+    TypePtr lhs = parse_type_primitive();
     if (has_token(TokenType::Arrow)) {
         next_token();
 
-        Type *rhs = parse_type();
-        lhs = new Type(TypeFunction(lhs, rhs));
+        TypePtr rhs = parse_type();
+        lhs = std::make_shared<Type>(TypeFunction(lhs, rhs));
     }
     return lhs;
 }
@@ -262,17 +284,18 @@ Type *Parser::parse_type()
 //                              Private Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void Parser::match(TokenType type)
+void Parser::match(TokenType expected)
 {
     if (m_head_token.has_value()) {
-        if (m_head_token.value() == type) {
+        if (m_head_token.value() == expected) {
             next_token();
         } else {
             // TODO: allow for error recovery in some cases if time allows
-            COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got {}.", type);
+            TokenType got = m_head_token.value();
+            COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token `{}` but got `{}`.", expected, got);
         }
     } else {
-        COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token but got EOF.");
+        COMPILER_ERROR_TERM("ERROR: Parser wanted to match a token `{}` but got EOF.");
     }
 }
 

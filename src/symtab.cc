@@ -33,7 +33,7 @@ void TreeSymtabVisitor::visit(TreeBindingNode *node)
         
         assert(node->attr_type.has_value());
         auto [fn_type, arity] =
-            make_function_type(static_cast<TreeParamsNode *>(node->params), *node->attr_type);
+            make_function_type(static_cast<TreeParamsNode *>(node->params.get()), *node->attr_type);
 
         table.insert(Declaration {node->id, fn_type, arity});
     } else {
@@ -60,6 +60,20 @@ void TreeSymtabVisitor::visit(TreeBinopNode *node)
 {
     node->lhs->accept(this);
     node->rhs->accept(this);
+}
+
+void TreeSymtabVisitor::visit(TreeMatchNode *node)
+{
+    node->expr->accept(this);
+    for (auto& arm : node->arms) {
+        arm->accept(this);
+    }
+}
+
+void TreeSymtabVisitor::visit(TreeMatchArmNode *node)
+{
+    node->pattern->accept(this);
+    node->body->accept(this);
 }
 
 void TreeSymtabVisitor::visit(TreeApplyNode *node)

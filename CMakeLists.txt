@@ -25,6 +25,8 @@ add_executable(fc src/main.cc
                   src/parser.cc
                   src/symtab.cc
                   src/sema.cc
-                  src/types.cc)
+                  src/types.cc
+                  src/lambda_debug.cc
+                  src/high_to_elc.cc)
 
 target_link_libraries(fc fmt::fmt)

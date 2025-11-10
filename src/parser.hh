@@ -22,15 +22,15 @@ public:
         : m_scanner(scanner), m_head_token({})
     {}
     
-    [[nodiscard]] TreeNode *parse_program();
-    [[nodiscard]] TreeNode *parse_binding();
-    [[nodiscard]] TreeNode *parse_param_list();
-    [[nodiscard]] TreeNode *parse_param_seq();
-    [[nodiscard]] TreeNode *parse_body();
-    [[nodiscard]] TreeNode *parse_expr(int precedence);
-    [[nodiscard]] TreeNode *parse_primary_expr(bool apply);
-    [[nodiscard]] Type *parse_type();
-    [[nodiscard]] Type *parse_type_primitive();
+    [[nodiscard]] std::unique_ptr<TreeNode> parse_program();
+    [[nodiscard]] std::unique_ptr<TreeNode> parse_binding();
+    [[nodiscard]] std::unique_ptr<TreeNode> parse_param_list();
+    [[nodiscard]] std::unique_ptr<TreeNode> parse_param_seq();
+    [[nodiscard]] std::unique_ptr<TreeNode> parse_body();
+    [[nodiscard]] std::unique_ptr<TreeNode> parse_expr(int precedence);
+    [[nodiscard]] std::unique_ptr<TreeNode> parse_primary_expr(bool apply);
+    [[nodiscard]] TypePtr parse_type();
+    [[nodiscard]] TypePtr parse_type_primitive();
 private:
     void match(TokenType type);
     void next_token();

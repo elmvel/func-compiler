@@ -12,10 +12,14 @@
 #include "parser.hh"
 #include "symtab.hh"
 #include "sema.hh"
+#include "lambda.hh"
+#include "lambda_debug.hh"
+#include "high_to_elc.hh"
 
 // #define ONLY_SCAN
 // #define ONLY_PARSE
-#define ONLY_SEMA
+// #define ONLY_SEMA
+#define ONLY_ELC_GEN
 
 std::optional<std::string> read_file(const std::string& file_path)
 {
@@ -160,6 +164,36 @@ struct TreeTraceVisitor : ITreeVisitor
         text = local_text;
     }
 
+    virtual void visit(TreeMatchNode *node)
+    {
+        std::string local_text = "Match(";
+
+        node->expr->accept(this);
+        local_text.append(text);
+        for (auto& node : node->arms) {
+            local_text.append(", ");
+            node->accept(this);
+            local_text.append(text);
+        }
+        local_text.append(")");
+        
+
+        text = local_text;
+    }
+
+    virtual void visit(TreeMatchArmNode *node)
+    {
+        std::string local_text = "";
+        
+        node->pattern->accept(this);
+        local_text.append(text);
+        local_text.append(" => ");
+        node->body->accept(this);
+        local_text.append(text);
+
+        text = local_text;
+    }
+
     virtual void visit(TreeIdentNode *node)
     {
         text = node->name;
@@ -210,12 +244,10 @@ int main()
         Scanner scanner {*file_content};
         Parser parser {scanner};
 
-        TreeNode *root = parser.parse_program();
+        std::unique_ptr<TreeNode> root = parser.parse_program();
         TreeTraceVisitor visitor;
         root->accept(&visitor);
         fmt::println("{}", visitor.text);
-
-        delete root;
     }
 #elif defined (ONLY_SEMA)
     fmt::println("========================================");
@@ -224,7 +256,7 @@ int main()
     {
         Scanner scanner {*file_content};
         Parser parser {scanner};
-        TreeNode *root = parser.parse_program();
+        std::unique_ptr<TreeNode> root = parser.parse_program();
 
         // This does probably walk more of the tree than necessary,
         // but oh well...
@@ -237,8 +269,57 @@ int main()
         if (!visitor_sema.valid) COMPILER_TERM();
 
         fmt::println("Passed Semantic Analysis!");
+    }
+#elif defined (ONLY_ELC_GEN)
+    fmt::println("========================================");
+    fmt::println("    Enriched Lambda Calculus Codegen    ");
+    fmt::println("========================================");
+#if 0
+    {
+        fmt::println("=== TESTING ELC DEBUG PRINTING ===");
+#define MKLC(type, ...) std::make_shared<type>(__VA_ARGS__)
+        // Testing ELC IR
+        LCNodePtr body   = MKLC(LCIntNode, 67);
+        LCNodePtr lambda = MKLC(LCLambdaNode, "x", body);
 
-        delete root;
+        LCNodePtr boole  = MKLC(LCBoolNode, false);
+        LCNodePtr apply  = MKLC(LCApplyNode, lambda, boole);
+
+        LCNodePtr def = MKLC(LCDefNode, "y", MKLC(LCIntNode, 1));
+        LCNodePtr let = MKLC(LCLetNode, std::vector<LCNodePtr> {def}, MKLC(LCBoolNode, false), true);
+
+        LCTraceVisitor visitor;
+        lambda->accept(&visitor);
+        fmt::println("{}", visitor.v_text.read_asserted());
+
+        apply->accept(&visitor);
+        fmt::println("{}", visitor.v_text.read_asserted());
+
+        let->accept(&visitor);
+        fmt::println("{}", visitor.v_text.read_asserted());
+#undef MKLC
+        fmt::println("==================================");
+    }
+#endif
+    {
+        Scanner scanner {*file_content};
+        Parser parser {scanner};
+        std::unique_ptr<TreeNode> root = parser.parse_program();
+
+        // Symbol Table Pass
+        TreeSymtabVisitor visitor_symtab;
+        root->accept(&visitor_symtab);
+
+        // Semantic Analysis Pass
+        TreeSemaVisitor visitor_sema(visitor_symtab.table);
+        root->accept(&visitor_sema);
+
+        if (!visitor_sema.valid) COMPILER_TERM();
+
+        TreeToELCVisitor visitor_elc;
+        root->accept(&visitor_elc);
+        
+        fmt::println("Finished Pass: lowering to ELC.");
     }
 #else
     fmt::println("TODO: Full pass of compiler");

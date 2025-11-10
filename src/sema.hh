@@ -73,14 +73,17 @@ struct TreeSemaVisitor : ITreeVisitor
     virtual void visit(TreeBindingNode *node);
     virtual void visit(TreeBinopNode *node);
     virtual void visit(TreeApplyNode *node);
+    virtual void visit(TreeMatchNode *node);
+    virtual void visit(TreeMatchArmNode *node);
     virtual void visit(TreeIdentNode *node);
     virtual void visit(TreeIntegerNode *node);
     virtual void visit(TreeStringNode *node);
 
     SymbolTable table;
     bool valid;
+    bool match_arm_yield_body_type;
 
-    VisitValue<Type *> v_type;
+    VisitValue<TypePtr> v_type;
     VisitValue<bool>   v_insert;
     VisitValue<size_t> v_arity;
 };
