@@ -22,9 +22,6 @@ void LCTraceVisitor::visit(LCLambdaNode *node)
 
 void LCTraceVisitor::visit(LCDefNode *node)
 {
-    // @remove
-    // node->var->accept(this);
-    // std::string traced_var = v_text.read_asserted();
     node->body->accept(this);
     std::string traced_body = v_text.read_asserted();
     v_text.write(fmt::format("{} = {}", node->var, traced_body));
@@ -69,4 +66,10 @@ void LCTraceVisitor::visit(LCBoolNode *node)
 void LCTraceVisitor::visit(LCConstantNode *node)
 {
     v_text.write(fmt::format("{}", node->name));
+}
+
+void LCTraceVisitor::visit(LCDummyNode *node)
+{
+    UNUSED(node);
+    v_text.write(fmt::format("()"));
 }

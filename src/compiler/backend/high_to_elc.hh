@@ -25,8 +25,8 @@ struct TreeToELCVisitor : ITreeVisitor
 
     VisitValue<LCNodePtr> v_elc;
 
-    // When recursing, we would like to know the binding name as well as the expression
-    VisitValue<std::pair<std::string, LCNodePtr>> v_elc_let;
+    // We would like to return (v = B) for a top-level `let` and (let v = B in E) otherwise
+    VisitValue<bool> v_is_toplevel;
 };
 
 #endif // HIGH_TO_ELC_HH_

@@ -4,7 +4,7 @@ project(
     func-compiler
     VERSION 0.1.0
     DESCRIPTION "A brief implementation of a unique functional language compiler to study backend optimization."
-    LANGUAGES CXX
+    LANGUAGES CXX C
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -30,3 +30,5 @@ add_executable(fc src/compiler/main.cc
                   src/compiler/backend/high_to_elc.cc)
 
 target_link_libraries(fc fmt::fmt)
+
+add_executable(runtime-probe src/runtime-probe/main.c)

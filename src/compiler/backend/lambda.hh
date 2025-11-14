@@ -56,6 +56,7 @@ struct LCCaseArmNode;
 struct LCIntNode;
 struct LCBoolNode;
 struct LCConstantNode;
+struct LCDummyNode;
 
 struct ILCVisitor
 {
@@ -68,6 +69,7 @@ struct ILCVisitor
     virtual void visit(LCIntNode *node) = 0;
     virtual void visit(LCBoolNode *node) = 0;
     virtual void visit(LCConstantNode *node) = 0;
+    virtual void visit(LCDummyNode *node) = 0;
 };
 
 // Lambda Calculus Node
@@ -263,6 +265,17 @@ struct LCConstantNode : LCNode
     }
     
     std::string name;
+};
+
+struct LCDummyNode : LCNode
+{
+    LCDummyNode()
+    {}
+
+    virtual void accept(ILCVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
 };
 
 #endif // LAMBDA_HH_

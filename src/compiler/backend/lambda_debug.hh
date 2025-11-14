@@ -15,6 +15,7 @@ struct LCTraceVisitor : ILCVisitor
     virtual void visit(LCIntNode *node);
     virtual void visit(LCBoolNode *node);
     virtual void visit(LCConstantNode *node);
+    virtual void visit(LCDummyNode *node);
 
     VisitValue<std::string> v_text;
 };

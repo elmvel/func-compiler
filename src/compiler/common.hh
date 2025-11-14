@@ -28,7 +28,16 @@
         fmt::print(stderr, "note: ");           \
         fmt::println(stderr, __VA_ARGS__);      \
     } while (0)
+#define INTERNAL_ERROR(...)                     \
+    do {                                        \
+        fmt::print(stderr, "internal error: "); \
+        fmt::println(stderr, __VA_ARGS__);      \
+        COMPILER_TERM();                        \
+    } while (0)
 
 #include <variant>
+#include <csignal>
+
+#define BREAKPOINT std::raise(SIGINT);
 
 #endif // COMMON_HH_

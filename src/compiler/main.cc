@@ -318,6 +318,12 @@ int main()
 
         TreeToELCVisitor visitor_elc;
         root->accept(&visitor_elc);
+
+        LCTraceVisitor visitor_elc_trace;
+        LCNodePtr prog = visitor_elc.v_elc.read_asserted();
+        prog->accept(&visitor_elc_trace);
+
+        fmt::println("{}", visitor_elc_trace.v_text.read_asserted());
         
         fmt::println("Finished Pass: lowering to ELC.");
     }

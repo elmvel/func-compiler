@@ -27,13 +27,15 @@ void TreeToELCVisitor::visit(TreeSeqNode *node)
 
     std::vector<LCNodePtr> elc_children;
     for (auto& child : node->children) {
+        v_is_toplevel.write(true);
         child->accept(this);
-        auto [var, elc_child] = v_elc_let.read_asserted();
+        LCNodePtr def = v_elc.read_asserted();
+        LCDefNode *def_ptr = static_cast<LCDefNode *>(def.get());
 
-        if (var == "main") {
-            main_expr = elc_child;
+        if (def_ptr->var == "main") {
+            main_expr = def_ptr->body;
         } else {
-            elc_children.push_back(std::make_shared<LCDefNode>(var, elc_child));
+            elc_children.push_back(def);
         }
     }
 
@@ -46,8 +48,24 @@ void TreeToELCVisitor::visit(TreeSeqNode *node)
 
 void TreeToELCVisitor::visit(TreeParamsNode *node)
 {
-    (void)node;
-    COMPILER_ERROR_TERM("TODO: High->ELC for TreeParamsNode");
+    /*
+      By this point, the let body expression should be in v_elc
+
+      We simply wrap the resulting node within a lambda abstraction
+    */
+
+    LCNodePtr body = v_elc.read_asserted();
+    LCNodePtr lambda = body;
+
+    for (auto it = node->children.rbegin(); it != node->children.rend(); ++it) {
+        (*it)->accept(this);
+        LCNodePtr lc = v_elc.read_asserted();
+        auto constant = static_cast<LCConstantNode *>(lc.get());
+
+        lambda = std::make_shared<LCLambdaNode>(constant->name, lambda);
+    }
+
+    v_elc.write(lambda);
 }
 
 void TreeToELCVisitor::visit(TreeListNode *node)
@@ -67,29 +85,53 @@ void TreeToELCVisitor::visit(TreeBindingNode *node)
     /*
       TD[[ let v: T := E ]] == v = TE[[ E ]]
      */
+
+
+    // We are no longer looking at the top level
+    bool toplevel = v_is_toplevel.read_asserted();
+    v_is_toplevel.write(false);
+    
+    // Look into the body
+    node->body->accept(this);
+
+    // Restore the toplevel assertion
+    v_is_toplevel.write(toplevel);
+
     if (node->params != nullptr) {
-        // TODO: simple function definition translation
-        // node->params->accept(this);
+        // If this is a function, wrap the body in lambdas
+        node->params->accept(this);
     }
 
-    node->body->accept(this);
     LCNodePtr body = v_elc.read_asserted();
-
     LCNodePtr def = std::make_shared<LCDefNode>(node->id, body);
 
-    if (node->next != nullptr) {
+    if (v_is_toplevel.read_asserted()) {
+        /*
+          We should get a def, (v = B)
+        */
+        v_is_toplevel.write(true);
+
+        if (node->next != nullptr) {
+            INTERNAL_ERROR("A top-level let (`{}`) should not have a next node.", node->id);
+        }
+
+        v_elc.write(def);
+    } else {
+        /*
+          We should get a full let expression (let v = B in E)
+        */
+        v_is_toplevel.write(false);
+        
+        if (node->next == nullptr) {
+            INTERNAL_ERROR("A non-top-level let should have a next node, as there must be some final expression.");
+        }
+
         node->next->accept(this);
         LCNodePtr in_expr = v_elc.read_asserted();
 
         // TODO: recursive by default
         LCNodePtr let = std::make_shared<LCLetNode>(std::vector<LCNodePtr> {def}, in_expr, RECURSIVE);
         v_elc.write(let);
-        v_elc_let.write({node->id, let});
-    } else {
-        // COMPILER_ERROR_TERM("No next node after a let binding, this might trigger for globals but it should be disallowed");
-        LCNodePtr let = std::make_shared<LCLetNode>(std::vector<LCNodePtr> {def}, nullptr, RECURSIVE);
-        v_elc.write(let);
-        v_elc_let.write({node->id, let});
     }
 }
 
