@@ -22,6 +22,7 @@ FetchContent_MakeAvailable(fmt)
 
 add_executable(fc src/compiler/main.cc
                   src/compiler/frontend/scanner.cc
+                  src/compiler/frontend/scanner_debug.cc
                   src/compiler/frontend/parser.cc
                   src/compiler/frontend/symtab.cc
                   src/compiler/frontend/sema.cc
