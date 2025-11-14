@@ -7,6 +7,8 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
+#include "CLI11.hpp"
+
 #include "common.hh"
 #include "frontend/scanner.hh"
 #include "frontend/parser.hh"
@@ -214,124 +216,92 @@ struct TreeTraceVisitor : ITreeVisitor
     int level = 0;
 };
 
-int main()
+#define CLIARG(type, name, def, cli_name, cli_desc, req)       \
+    type name = def;                                           \
+    app.add_option(cli_name, name, cli_desc)->required(req);
+
+#define CLIFLAG(type, name, def, cli_name, cli_desc, req)       \
+    type name = def;                                           \
+    app.add_flag(cli_name, name, cli_desc)->required(req);
+
+int main(int argc, char *argv[])
 {
-    std::string file_path = "examples/test.fc";
+    CLI::App app {"A Functional Compiler"};
+    argv = app.ensure_utf8(argv);
+
+    CLIARG(std::string, file_path, "", "file-path", "The path of the fc to compile.", true);
+    CLIFLAG(bool, dump_file, false, "-d,--dump-file", "Output the input file.", false);
+    CLIFLAG(bool, dump_tokens, false, "-t,--dump-tokens", "Output scanned tokens.", false);
+    CLIFLAG(bool, dump_ast, false, "--ast,--dump-ast", "Output parse tree.", false);
+    CLIFLAG(bool, no_sema, false, "--ns,--no-sema", "Exit before semantic analysis.", false);
+    CLIFLAG(bool, dump_elc, false, "-E,--dump-elc", "Output the lambda calculus.", false);
+
+    CLI11_PARSE(app, argc, argv);
+
     auto file_content = read_file(file_path);
     if (!file_content.has_value()) return 1;
 
-    fmt::println("========================================");
-    fmt::println("                Raw Data                ");
-    fmt::println("========================================");
-    fmt::println("File Content:\n{}", *file_content);
+    if (dump_file) {
+        fmt::println("========================================");
+        fmt::println("                Raw Data                ");
+        fmt::println("========================================");
+        fmt::println("File Content:\n{}", *file_content);
+    }
 
-#if defined(ONLY_SCAN)
-    fmt::println("========================================");
-    fmt::println("                Scanning                ");
-    fmt::println("========================================");
-    {
-        Scanner scanner {*file_content};
+    Scanner scanner {*file_content};
+
+    if (dump_tokens) {
+        fmt::println("========================================");
+        fmt::println("                 Tokens                 ");
+        fmt::println("========================================");
+        Scanner scannerTrace {*file_content};
+
         std::optional<TokenType> token = {};
-        while ((token = scanner.next_token()).has_value()) {
-            trace_token(scanner, token);
+        while ((token = scannerTrace.next_token()).has_value()) {
+            trace_token(scannerTrace, token);
         }
     }
-#elif defined (ONLY_PARSE)
-    fmt::println("========================================");
-    fmt::println("                 Parsing                ");
-    fmt::println("========================================");
-    {
-        Scanner scanner {*file_content};
-        Parser parser {scanner};
+    
+    Parser parser {scanner};
+    std::unique_ptr<TreeNode> root = parser.parse_program();
 
-        std::unique_ptr<TreeNode> root = parser.parse_program();
+    if (dump_ast) {
+        fmt::println("========================================");
+        fmt::println("                  AST                   ");
+        fmt::println("========================================");
         TreeTraceVisitor visitor;
         root->accept(&visitor);
         fmt::println("{}", visitor.text);
     }
-#elif defined (ONLY_SEMA)
-    fmt::println("========================================");
-    fmt::println("            Semantic Analysis           ");
-    fmt::println("========================================");
-    {
-        Scanner scanner {*file_content};
-        Parser parser {scanner};
-        std::unique_ptr<TreeNode> root = parser.parse_program();
 
-        // This does probably walk more of the tree than necessary,
-        // but oh well...
-        TreeSymtabVisitor visitor_symtab;
-        root->accept(&visitor_symtab);
-
-        TreeSemaVisitor visitor_sema(visitor_symtab.table);
-        root->accept(&visitor_sema);
-
-        if (!visitor_sema.valid) COMPILER_TERM();
-
-        fmt::println("Passed Semantic Analysis!");
+    if (no_sema) {
+        fmt::println("Skipping semantic analysis, exiting...");
+        return 0;
     }
-#elif defined (ONLY_ELC_GEN)
-    fmt::println("========================================");
-    fmt::println("    Enriched Lambda Calculus Codegen    ");
-    fmt::println("========================================");
-#if 0
-    {
-        fmt::println("=== TESTING ELC DEBUG PRINTING ===");
-#define MKLC(type, ...) std::make_shared<type>(__VA_ARGS__)
-        // Testing ELC IR
-        LCNodePtr body   = MKLC(LCIntNode, 67);
-        LCNodePtr lambda = MKLC(LCLambdaNode, "x", body);
+    
+    // Symbol Table Pass
+    TreeSymtabVisitor visitor_symtab;
+    root->accept(&visitor_symtab);
+    
+    // Semantic Analysis Pass
+    TreeSemaVisitor visitor_sema(visitor_symtab.table);
+    root->accept(&visitor_sema);
+    
+    if (!visitor_sema.valid) COMPILER_TERM();
+    
+    TreeToELCVisitor visitor_elc;
+    root->accept(&visitor_elc);
 
-        LCNodePtr boole  = MKLC(LCBoolNode, false);
-        LCNodePtr apply  = MKLC(LCApplyNode, lambda, boole);
-
-        LCNodePtr def = MKLC(LCDefNode, "y", MKLC(LCIntNode, 1));
-        LCNodePtr let = MKLC(LCLetNode, std::vector<LCNodePtr> {def}, MKLC(LCBoolNode, false), true);
-
-        LCTraceVisitor visitor;
-        lambda->accept(&visitor);
-        fmt::println("{}", visitor.v_text.read_asserted());
-
-        apply->accept(&visitor);
-        fmt::println("{}", visitor.v_text.read_asserted());
-
-        let->accept(&visitor);
-        fmt::println("{}", visitor.v_text.read_asserted());
-#undef MKLC
-        fmt::println("==================================");
-    }
-#endif
-    {
-        Scanner scanner {*file_content};
-        Parser parser {scanner};
-        std::unique_ptr<TreeNode> root = parser.parse_program();
-
-        // Symbol Table Pass
-        TreeSymtabVisitor visitor_symtab;
-        root->accept(&visitor_symtab);
-
-        // Semantic Analysis Pass
-        TreeSemaVisitor visitor_sema(visitor_symtab.table);
-        root->accept(&visitor_sema);
-
-        if (!visitor_sema.valid) COMPILER_TERM();
-
-        TreeToELCVisitor visitor_elc;
-        root->accept(&visitor_elc);
+    if (dump_elc) {
+        fmt::println("========================================");
+        fmt::println("                  ELC                   ");
+        fmt::println("========================================");
 
         LCTraceVisitor visitor_elc_trace;
         LCNodePtr prog = visitor_elc.v_elc.read_asserted();
         prog->accept(&visitor_elc_trace);
-
         fmt::println("{}", visitor_elc_trace.v_text.read_asserted());
-        
-        fmt::println("Finished Pass: lowering to ELC.");
     }
-#else
-    fmt::println("TODO: Full pass of compiler");
-#endif
-    return 0;
+    
+    fmt::println("Finished Pass: lowering to ELC.");
 }
-
-// compilers
-// cs435!

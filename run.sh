@@ -1,13 +1,16 @@
 #!/bin/sh
 
 binary="fc"
+run=0
 
 if ! [ -z "$1" ]
 then
     binary="$1"
+    run=1
 fi
 
-set -xe
-
 cmake --build build/
-./build/$binary
+if [ "$run" -eq 1 ]
+then
+    ./build/$binary
+fi
