@@ -22,9 +22,6 @@ void LCTraceVisitor::visit(LCLambdaNode *node)
 
 void LCTraceVisitor::visit(LCDefNode *node)
 {
-    // @remove
-    // node->var->accept(this);
-    // std::string traced_var = v_text.read_asserted();
     node->body->accept(this);
     std::string traced_body = v_text.read_asserted();
     v_text.write(fmt::format("{} = {}", node->var, traced_body));
@@ -41,7 +38,8 @@ void LCTraceVisitor::visit(LCLetNode *node)
     }
     node->expr->accept(this);
     std::string traced_expr = v_text.read_asserted();
-    v_text.write(fmt::format("(let {} in {})", defs, traced_expr));
+    std::string let_type = node->recursive ? "letrec" : "let";
+    v_text.write(fmt::format("({} {} in {})", let_type, defs, traced_expr));
 }
 
 void LCTraceVisitor::visit(LCCaseNode *node)
@@ -69,4 +67,10 @@ void LCTraceVisitor::visit(LCBoolNode *node)
 void LCTraceVisitor::visit(LCConstantNode *node)
 {
     v_text.write(fmt::format("{}", node->name));
+}
+
+void LCTraceVisitor::visit(LCDummyNode *node)
+{
+    UNUSED(node);
+    v_text.write(fmt::format("()"));
 }

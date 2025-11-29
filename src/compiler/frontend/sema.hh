@@ -1,7 +1,7 @@
 #ifndef SEMA_HH_
 #define SEMA_HH_
 
-#include "common.hh"
+#include "../common.hh"
 #include "tree.hh"
 #include "symtab.hh"
 

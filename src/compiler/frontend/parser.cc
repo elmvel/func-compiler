@@ -4,7 +4,7 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
-#include "common.hh"
+#include "../common.hh"
 #include "parser.hh"
 
 enum class Assoc {

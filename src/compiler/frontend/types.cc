@@ -1,4 +1,4 @@
-#include "common.hh"
+#include "../common.hh"
 #include "tree.hh"
 #include "types.hh"
 
