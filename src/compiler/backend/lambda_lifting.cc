@@ -83,12 +83,25 @@ LCNodePtr LCSupercombinatorVisitor::visit(LCDefNode *node)
 
 LCNodePtr LCSupercombinatorVisitor::visit(LCLetNode *node)
 {
-    std::vector<LCNodePtr> definitions;
-    for (auto& def : node->definitions) {
-        definitions.emplace_back(def->accept(this));
+    if (node->level == 0 && node->count_inner_lambdas() == 0) {
+        // Toplevel of supercombinators => lift as supercombinators
+        for (auto& def : node->definitions) {
+            LCDefNode *def_ptr = static_cast<LCDefNode *>(def.get());
+            LCNodePtr body = def_ptr->body->accept(this);
+            supercombinators[def_ptr->var] = body;
+        }
+
+        // After lifting the definitions as supercombinators, we
+        // should be left with just the inner expression.
+        return node->expr->accept(this);
+    } else {
+        std::vector<LCNodePtr> definitions;
+        for (auto& def : node->definitions) {
+            definitions.emplace_back(def->accept(this));
+        }
+        LCNodePtr expr = node->expr->accept(this);
+        return std::make_shared<LCLetNode>(definitions, expr, node->recursive);
     }
-    LCNodePtr expr = node->expr->accept(this);
-    return std::make_shared<LCLetNode>(definitions, expr, node->recursive);
 }
 
 LCNodePtr LCSupercombinatorVisitor::visit(LCCaseNode *node)

@@ -74,6 +74,22 @@ LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
         }
     }
 
+    // Recalculate let(rec) levels
+    FreeVarsEnv _unused;
+    lifted->find_free_vars(_unused);
+    // Lift the toplevel let(rec)
+    lifted = lifted->accept(&visitor_lambda_lifting);
+    if (print) {
+        fmt::println("========== Lifting defs in toplevel letrec =============");
+        lifted->accept(&visitor_trace);
+        for (auto& [name, elc] : visitor_lambda_lifting.supercombinators) {
+            LCTraceVisitor vet;
+            elc->accept(&vet);
+            fmt::println("  $ {} = {}", name, vet.v_text.read_asserted());
+        }
+        fmt::println("Round {} of Lifting: {}", rounds, visitor_trace.v_text.read_asserted());
+    }
+
     // Optimizations
     if (print) fmt::println("========== Optimizing with eta-reduction =============");
 
@@ -103,6 +119,15 @@ LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
         auto& [from, to] = to_replace.value();
         visitor_lambda_lifting.supercombinators.erase(from);
         lifted->sc_rewrite(from, to);
+
+        // Remove any 'sc_name = from' supercombinator definitions.
+        for (auto& [sc_name, sc] : visitor_lambda_lifting.supercombinators) {
+            LCConstantNode *constant = dynamic_cast<LCConstantNode *>(sc.get());
+            if (constant == nullptr) continue;
+            if (constant->name == from) {
+                constant->name = to;
+            }
+        }
     }
 
     if (print) {
@@ -291,8 +316,6 @@ int main(int argc, char *argv[])
 
     LCNodePtr elc_prog = visitor_elc.v_elc.read_asserted();
     LiftedProgram lp = perform_lambda_lifting(elc_prog, dump_lifting);
-
-    fmt::println("IMPORTANT: re-read the book and implement floating let(rec)s to get rid of the redundant letrec of program function definitions that simply point to the supercombinators. Use sc_rewrite to just drop in the names of the supercombinators in place of those let definitions.");
     
     fmt::println("Finished Pass: Supercombinator Lifting.");
 }

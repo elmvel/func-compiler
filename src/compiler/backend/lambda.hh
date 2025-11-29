@@ -113,7 +113,14 @@ struct LCNode
 
     virtual void accept(ILCVisitor *visitor) = 0;
     virtual LCNodePtr accept(ILCTransformVisitor *visitor) = 0;
+
+    /*
+      This one is sneaky. To avoid code repetition, and since we will
+      surely try to find the free variables at least once, we will also
+      compute the let(rec) lexical levels here.
+    */
     virtual void find_free_vars(FreeVarsEnv& env) = 0;
+
     virtual int count_inner_lambdas() = 0;
     virtual void sc_rewrite(const std::string& from, const std::string& to) = 0;
 };
@@ -261,7 +268,7 @@ struct LCDefNode : LCNode
 struct LCLetNode : LCNode
 {
     LCLetNode(const std::vector<LCNodePtr>& defs, LCNodePtr expr, bool recursive)
-        : definitions(defs), expr(expr), recursive(recursive)
+        : definitions(defs), expr(expr), recursive(recursive), level(-1)
     {}
 
     virtual void accept(ILCVisitor *visitor)
@@ -276,6 +283,9 @@ struct LCLetNode : LCNode
 
     virtual void find_free_vars(FreeVarsEnv& env)
     {
+        // Before starting, record the level of the let(rec)
+        level = env.level;
+        
         std::unordered_set<std::string> let_defined;
 
         // First, find the free variables in the definition bodies.
@@ -320,6 +330,7 @@ struct LCLetNode : LCNode
     std::vector<LCNodePtr> definitions;
     LCNodePtr expr;
     bool recursive;
+    int level;
 };
 
 /*
