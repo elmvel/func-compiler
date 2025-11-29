@@ -129,7 +129,7 @@ void TreeToELCVisitor::visit(TreeBindingNode *node)
         node->next->accept(this);
         LCNodePtr in_expr = v_elc.read_asserted();
 
-        // TODO: recursive by default
+        // TODO: Don't blindly pick recursive by default
         LCNodePtr let = std::make_shared<LCLetNode>(std::vector<LCNodePtr> {def}, in_expr, RECURSIVE);
         v_elc.write(let);
     }

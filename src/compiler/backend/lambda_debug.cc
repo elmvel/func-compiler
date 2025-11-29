@@ -38,7 +38,8 @@ void LCTraceVisitor::visit(LCLetNode *node)
     }
     node->expr->accept(this);
     std::string traced_expr = v_text.read_asserted();
-    v_text.write(fmt::format("(let {} in {})", defs, traced_expr));
+    std::string let_type = node->recursive ? "letrec" : "let";
+    v_text.write(fmt::format("({} {} in {})", let_type, defs, traced_expr));
 }
 
 void LCTraceVisitor::visit(LCCaseNode *node)

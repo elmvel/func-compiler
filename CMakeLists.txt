@@ -28,7 +28,8 @@ add_executable(fc src/compiler/main.cc
                   src/compiler/frontend/sema.cc
                   src/compiler/frontend/types.cc
                   src/compiler/backend/lambda_debug.cc
-                  src/compiler/backend/high_to_elc.cc)
+                  src/compiler/backend/high_to_elc.cc
+                  src/compiler/backend/lambda_lifting.cc)
 
 target_link_libraries(fc fmt::fmt)
 
