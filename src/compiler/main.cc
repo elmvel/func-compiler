@@ -20,6 +20,7 @@
 #include "backend/lambda_debug.hh"
 #include "backend/high_to_elc.hh"
 #include "backend/lambda_lifting.hh"
+#include "backend/sc_to_gcode.hh"
 
 std::optional<std::string> read_file(const std::string& file_path)
 {
@@ -45,12 +46,6 @@ std::optional<std::string> read_file(const std::string& file_path)
 #define CLIFLAG(type, name, def, cli_name, cli_desc, req)  \
     type name = def;                                       \
     app.add_flag(cli_name, name, cli_desc)->required(req);
-
-struct LiftedProgram
-{
-    LCSupercombinatorVisitor sc_visitor;
-    LCNodePtr lifted_prog;
-};
 
 LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
 {
@@ -129,6 +124,10 @@ LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
             }
         }
     }
+
+    // Finally, lift main body into its own PROG supercombinator
+    visitor_lambda_lifting.supercombinators["__PROG"] = lifted;
+    lifted = std::make_shared<LCConstantNode>("__PROG");
 
     if (print) {
         for (auto& [name, elc] : visitor_lambda_lifting.supercombinators) {
@@ -226,6 +225,12 @@ int main(int argc, char *argv[])
 
     LCNodePtr elc_prog = visitor_elc.v_elc.read_asserted();
     LiftedProgram lp = perform_lambda_lifting(elc_prog, dump_lifting);
-    
-    fmt::println("Finished Pass: Supercombinator Lifting.");
+
+    SCToGCodeCompiler sc_to_gcode;
+    sc_to_gcode.compile(lp);
+
+    fmt::println("GCode Program:");
+    for (auto& instr : sc_to_gcode.output) {
+        instr->dump(0);
+    }
 }
