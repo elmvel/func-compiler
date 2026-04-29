@@ -29,6 +29,7 @@ struct GInstr
     {}
 
     virtual void dump(int level) = 0;
+    virtual void compile(std::string& output) = 0;
 };
 
 using GInstrPtr = std::unique_ptr<GInstr>;
@@ -40,6 +41,7 @@ struct GInstrPushInt : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     int value;
 };
@@ -51,6 +53,7 @@ struct GInstrPushGlobal : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     std::string name;
 };
@@ -62,6 +65,7 @@ struct GInstrPush : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     int offset;
 };
@@ -73,6 +77,7 @@ struct GInstrPop : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     int n;
 };
@@ -84,6 +89,7 @@ struct GInstrMkApp : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 };
 
 struct GInstrUnwind : GInstr
@@ -92,6 +98,7 @@ struct GInstrUnwind : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 };
 
 struct GInstrUpdate : GInstr
@@ -101,6 +108,7 @@ struct GInstrUpdate : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     int offset;
 };
@@ -112,6 +120,7 @@ struct GInstrPack : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 
     int tag, n;
 };
@@ -122,6 +131,7 @@ struct GInstrSplit : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 };
 
 struct GInstrJump : GInstr
@@ -131,6 +141,7 @@ struct GInstrJump : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     std::vector<std::vector<GInstrPtr>> branches;
     std::unordered_map<int, int> tag_map;
@@ -143,6 +154,7 @@ struct GInstrSlide : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     int n;
 };
@@ -154,6 +166,7 @@ struct GInstrBinOp : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     GBinop binop;
 };
@@ -164,6 +177,7 @@ struct GInstrEval : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 };
 
 struct GInstrAlloc : GInstr
@@ -173,6 +187,7 @@ struct GInstrAlloc : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
     
     int n;
 };
@@ -187,6 +202,7 @@ struct GInstrBegin : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 };
 
 struct GInstrEnd : GInstr
@@ -195,6 +211,7 @@ struct GInstrEnd : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 };
 
 struct GInstrPrint : GInstr
@@ -203,6 +220,7 @@ struct GInstrPrint : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 };
 
 struct GInstrGlobStart : GInstr
@@ -212,6 +230,7 @@ struct GInstrGlobStart : GInstr
     {}
 
     virtual void dump(int level);
+    virtual void compile(std::string& output);
 
     std::string name;
     int n;

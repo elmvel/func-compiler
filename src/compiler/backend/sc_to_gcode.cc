@@ -2,6 +2,8 @@
 
 #include "../common.hh"
 
+void compile_builtins(SCToGCodeCompiler *compiler);
+
 void SCToGCodeCompiler::compile(LiftedProgram& lp)
 {
     output.push_back(std::make_unique<GInstrBegin>());
@@ -14,11 +16,57 @@ void SCToGCodeCompiler::compile(LiftedProgram& lp)
     output.push_back(std::make_unique<GInstrEval>());
     output.push_back(std::make_unique<GInstrPrint>());
 
+    output.push_back(std::make_unique<GInstrEnd>());
+
     for (auto& [sc_name, lcbody] : lp.sc_visitor.supercombinators) {
         compile_supercombinator(sc_name, lcbody);
     }
 
-    output.push_back(std::make_unique<GInstrEnd>());
+    compile_builtins(this);
+}
+
+void compile_builtins(SCToGCodeCompiler *compiler)
+{
+    // TODO: make sure this compiles
+    compiler->output.push_back(std::make_unique<GInstrGlobStart>("ADD", 2));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Add));
+    compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
+    compiler->output.push_back(std::make_unique<GInstrPop>(2));
+    compiler->output.push_back(std::make_unique<GInstrUnwind>());
+
+    compiler->output.push_back(std::make_unique<GInstrGlobStart>("SUB", 2));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Sub));
+    compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
+    compiler->output.push_back(std::make_unique<GInstrPop>(2));
+    compiler->output.push_back(std::make_unique<GInstrUnwind>());
+
+    compiler->output.push_back(std::make_unique<GInstrGlobStart>("MUL", 2));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Mul));
+    compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
+    compiler->output.push_back(std::make_unique<GInstrPop>(2));
+    compiler->output.push_back(std::make_unique<GInstrUnwind>());
+
+    compiler->output.push_back(std::make_unique<GInstrGlobStart>("DIV", 2));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrEval>());
+    compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Div));
+    compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
+    compiler->output.push_back(std::make_unique<GInstrPop>(2));
+    compiler->output.push_back(std::make_unique<GInstrUnwind>());
 }
 
 int count_arguments(LCNodePtr lcbody)

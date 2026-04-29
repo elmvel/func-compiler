@@ -11,7 +11,7 @@
 
 #define TRY(dst, expr) dst = (expr); if (!(dst).is_ok()) return dst;
 
-#define COMPILER_TERM() std::exit(1)
+#define COMPILER_TERM() std::exit(EXIT_FAILURE)
 #define COMPILER_ERROR_TERM(...)                \
     do {                                        \
         fmt::print(stderr, "error: ");          \
