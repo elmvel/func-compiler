@@ -1,4 +1,39 @@
-(* Sums two integers together *)
-let add [a, b] :=
-    a + b + 100 + "hi" + "" + "Hello World!"
+(* Sometime soon it might be worth writing tests *)
+
+let sum: int [a: int, b: int] :=
+    a + b
 end
+
+let bar: int [x: int, y: int] :=
+    let a: int := 1,
+    let b: int := 2,
+    (a * x) + (b * y)
+end
+
+(*
+let factorial: int [x: int] :=
+    match x with
+        0 -> 1
+        n -> n * factorial (n - 1)
+    end
+end
+*)
+
+let main: int [] :=
+    sum (3) (7) 
+end
+
+(*
+    For Thesis Paper
+
+let foo: int [x: int, y: int] :=
+    let a: int := 1,
+    let b: int := 2,
+    (a * x) + (b * y)
+end
+
+let main: int [] :=
+    foo 3 7
+end
+
+*)

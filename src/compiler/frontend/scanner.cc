@@ -16,6 +16,7 @@ std::vector<std::pair<std::string, TokenType>> g_token_symbols = {
     {"/", TokenType::Div},
     {"&", TokenType::And},
     {".", TokenType::Dot},
+    {":", TokenType::Colon},
 };
 
 std::vector<std::pair<std::string, TokenType>> g_token_keywords = {
@@ -25,7 +26,46 @@ std::vector<std::pair<std::string, TokenType>> g_token_keywords = {
     {"then", TokenType::Then},
     {"else", TokenType::Else},
     {"match", TokenType::Match},
+    {"with", TokenType::With},
+
+    // Type Keywords
+    {"int", TokenType::TyInt},
+    {"string", TokenType::TyString},
 };
+
+auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ctx) const
+    -> format_context::iterator {
+  string_view name = "<unknown>";
+  switch (c) {
+  case TokenType::Id:       name="Id";       break;
+  case TokenType::Integer:  name="Integer";  break;
+  case TokenType::String:   name="String";   break;
+  case TokenType::LParen:   name="LParen";   break;
+  case TokenType::RParen:   name="RParen";   break;
+  case TokenType::LBracket: name="LBracket"; break;
+  case TokenType::RBracket: name="RBracket"; break;
+  case TokenType::Comma:    name="Comma";    break;
+  case TokenType::Assign:   name="Assign";   break;
+  case TokenType::Add:      name="Add";      break;
+  case TokenType::Sub:      name="Sub";      break;
+  case TokenType::Mul:      name="Mul";      break;
+  case TokenType::Div:      name="Div";      break;
+  case TokenType::Arrow:    name="Arrow";    break;
+  case TokenType::And:      name="And";      break;
+  case TokenType::Dot:      name="Dot";      break;
+  case TokenType::Colon:    name="Colon";    break;
+  case TokenType::Let:      name="Let";      break;
+  case TokenType::End:      name="End";      break;
+  case TokenType::If:       name="If";       break;
+  case TokenType::Then:     name="Then";     break;
+  case TokenType::Else:     name="Else";     break;
+  case TokenType::Match:    name="Match";    break;
+  case TokenType::With:     name="With";     break;
+  case TokenType::TyInt:    name="int";      break;
+  case TokenType::TyString: name="string";   break;
+  }
+  return formatter<std::string_view>::format(name, ctx);
+}
 
 Scanner::Scanner(const std::string& content)
     : m_state(ScanState::Start), m_content(content), m_cursor(0), m_lexeme({}), m_number(0)

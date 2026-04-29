@@ -1,0 +1,98 @@
+#include "symtab.hh"
+
+TreeSymtabVisitor::TreeSymtabVisitor()
+    : table()
+{}
+
+void TreeSymtabVisitor::visit(TreeSeqNode *node)
+{
+    for (auto& child : node->children) {
+        child->accept(this);
+    }
+}
+
+void TreeSymtabVisitor::visit(TreeParamsNode *node)
+{
+    for (auto& child : node->children) {
+        child->accept(this);
+    }
+}
+
+void TreeSymtabVisitor::visit(TreeListNode *node)
+{
+    for (auto& child : node->children) {
+        child->accept(this);
+    }
+}
+
+void TreeSymtabVisitor::visit(TreeBindingNode *node)
+{
+    // Insert this `let x = ...` into the symbol table
+    if (node->params != nullptr) {
+        // Synthesize the function type based on the parameters and return types
+        
+        assert(node->attr_type.has_value());
+        auto [fn_type, arity] =
+            make_function_type(static_cast<TreeParamsNode *>(node->params.get()), *node->attr_type);
+
+        table.insert(Declaration {node->id, fn_type, arity});
+    } else {
+        table.insert(Declaration {node->id, node->attr_type});
+    }
+
+    // Start traversing the AST
+    table.enter_scope();
+    
+    if (node->params != nullptr) {
+        node->params->accept(this);
+    }
+
+    node->body->accept(this);
+
+    if (node->next != nullptr) {
+        node->next->accept(this);
+    }
+
+    table.exit_scope();
+}
+
+void TreeSymtabVisitor::visit(TreeBinopNode *node)
+{
+    node->lhs->accept(this);
+    node->rhs->accept(this);
+}
+
+void TreeSymtabVisitor::visit(TreeMatchNode *node)
+{
+    node->expr->accept(this);
+    for (auto& arm : node->arms) {
+        arm->accept(this);
+    }
+}
+
+void TreeSymtabVisitor::visit(TreeMatchArmNode *node)
+{
+    node->pattern->accept(this);
+    node->body->accept(this);
+}
+
+void TreeSymtabVisitor::visit(TreeApplyNode *node)
+{
+    node->func->accept(this);
+    node->arg->accept(this);
+}
+
+void TreeSymtabVisitor::visit(TreeIdentNode *node)
+{
+    (void)node;
+}
+
+void TreeSymtabVisitor::visit(TreeIntegerNode *node)
+{
+    (void)node;
+}
+
+void TreeSymtabVisitor::visit(TreeStringNode *node)
+{
+    (void)node;
+}
