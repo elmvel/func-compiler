@@ -21,6 +21,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fmt)
 
 add_executable(fc src/compiler/main.cc
+                  src/compiler/file_reading.cc
                   src/compiler/frontend/scanner.cc
                   src/compiler/frontend/scanner_debug.cc
                   src/compiler/frontend/parser.cc
@@ -29,7 +30,10 @@ add_executable(fc src/compiler/main.cc
                   src/compiler/frontend/types.cc
                   src/compiler/backend/lambda_debug.cc
                   src/compiler/backend/high_to_elc.cc
-                  src/compiler/backend/lambda_lifting.cc)
+                  src/compiler/backend/lambda_lifting.cc
+                  src/compiler/backend/ginstr.cc
+                  src/compiler/backend/sc_to_gcode.cc
+                  src/compiler/backend/gcode_to_c.cc)
 
 target_link_libraries(fc fmt::fmt)
 

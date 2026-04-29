@@ -9,6 +9,7 @@
 
 #include "CLI11.hpp"
 
+#include "file_reading.hh"
 #include "common.hh"
 #include "frontend/scanner.hh"
 #include "frontend/scanner_debug.hh"
@@ -20,23 +21,8 @@
 #include "backend/lambda_debug.hh"
 #include "backend/high_to_elc.hh"
 #include "backend/lambda_lifting.hh"
-
-std::optional<std::string> read_file(const std::string& file_path)
-{
-    std::ifstream file(file_path);
-
-    if (!file.is_open()) {
-        fmt::println(stderr, "error: Could not read {}.", file_path);
-        return {};
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string content = buffer.str();
-    file.close();
-
-    return content;
-}
+#include "backend/sc_to_gcode.hh"
+#include "backend/gcode_to_c.hh"
 
 #define CLIARG(type, name, def, cli_name, cli_desc, req)   \
     type name = def;                                       \
@@ -45,12 +31,6 @@ std::optional<std::string> read_file(const std::string& file_path)
 #define CLIFLAG(type, name, def, cli_name, cli_desc, req)  \
     type name = def;                                       \
     app.add_flag(cli_name, name, cli_desc)->required(req);
-
-struct LiftedProgram
-{
-    LCSupercombinatorVisitor sc_visitor;
-    LCNodePtr lifted_prog;
-};
 
 LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
 {
@@ -130,6 +110,10 @@ LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
         }
     }
 
+    // Finally, lift main body into its own PROG supercombinator
+    visitor_lambda_lifting.supercombinators["__PROG"] = lifted;
+    lifted = std::make_shared<LCConstantNode>("__PROG");
+
     if (print) {
         for (auto& [name, elc] : visitor_lambda_lifting.supercombinators) {
             LCTraceVisitor vet;
@@ -154,11 +138,12 @@ int main(int argc, char *argv[])
     CLIFLAG(bool, no_sema, false, "--ns,--no-sema", "Exit before semantic analysis.", false);
     CLIFLAG(bool, dump_elc, false, "-E,--dump-elc", "Output the lambda calculus.", false);
     CLIFLAG(bool, dump_lifting, false, "-L,--dump-lifting", "Debug the lambda lifting process.", false);
+    CLIFLAG(bool, dump_gcode, false, "--gc,--dump-gcode", "Dump the compiled G-Machine code.", false);
 
     CLI11_PARSE(app, argc, argv);
 
     auto file_content = read_file(file_path);
-    if (!file_content.has_value()) return 1;
+    if (!file_content.has_value()) return EXIT_FAILURE;
 
     if (dump_file) {
         fmt::println("========================================");
@@ -195,7 +180,7 @@ int main(int argc, char *argv[])
 
     if (no_sema) {
         fmt::println("Skipping semantic analysis, exiting...");
-        return 0;
+        return EXIT_SUCCESS;
     }
     
     // Symbol Table Pass
@@ -226,6 +211,17 @@ int main(int argc, char *argv[])
 
     LCNodePtr elc_prog = visitor_elc.v_elc.read_asserted();
     LiftedProgram lp = perform_lambda_lifting(elc_prog, dump_lifting);
+
+    SCToGCodeCompiler sc_to_gcode;
+    sc_to_gcode.compile(lp);
+
+    if (dump_gcode) {
+        fmt::println("GCode Program:");
+        for (auto& instr : sc_to_gcode.output) {
+            instr->dump(0);
+        }
+    }
     
-    fmt::println("Finished Pass: Supercombinator Lifting.");
+    GCodeToCCompiler gcode_to_c;
+    gcode_to_c.compile(sc_to_gcode.output);
 }

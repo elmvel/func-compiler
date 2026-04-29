@@ -22,3 +22,18 @@ end
 let main: int [] :=
     sum (3) (7) 
 end
+
+(*
+    For Thesis Paper
+
+let foo: int [x: int, y: int] :=
+    let a: int := 1,
+    let b: int := 2,
+    (a * x) + (b * y)
+end
+
+let main: int [] :=
+    foo 3 7
+end
+
+*)

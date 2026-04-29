@@ -25,6 +25,12 @@ struct LCSupercombinatorVisitor : ILCTransformVisitor
     int counter = 0;
 };
 
+struct LiftedProgram
+{
+    LCSupercombinatorVisitor sc_visitor;
+    LCNodePtr lifted_prog;
+};
+
 std::optional<LCNodePtr> eta_reduction(const LCSupercombinatorMap& supercombinators, LCNodePtr node);
 
 #endif // LAMBDA_LIFTING_HH_
