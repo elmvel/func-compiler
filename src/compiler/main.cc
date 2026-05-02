@@ -127,11 +127,13 @@ LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
     return {visitor_lambda_lifting, lifted};
 }
 
-bool finish_compilation(GCodeToCXXCompiler& gcode_to_cxx)
+bool finish_compilation(GCodeToCXXCompiler& gcode_to_cxx, bool keep_files)
 {
     if (!write_file("./out.cc", gcode_to_cxx.code)) return false;
 
     system("g++ -std=c++20 -o ./f.out ./out.cc");
+    if (!keep_files)
+        system("rm ./out.cc");
 
     return true;
 }
@@ -144,13 +146,14 @@ int main(int argc, char *argv[])
     CLIARG(std::string, file_path, "", "file-path", "The path of the fc to compile.", true);
     CLIFLAG(bool, dump_file, false, "-d,--dump-file", "Output the input file.", false);
     CLIFLAG(bool, dump_tokens, false, "-t,--dump-tokens", "Output scanned tokens.", false);
-    CLIFLAG(bool, dump_ast, false, "--ast,--dump-ast", "Output parse tree.", false);
-    CLIFLAG(bool, no_sema, false, "--ns,--no-sema", "Exit before semantic analysis.", false);
+    CLIFLAG(bool, dump_ast, false, "-ast,--dump-ast", "Output parse tree.", false);
+    CLIFLAG(bool, no_sema, false, "-ns,--no-sema", "Exit before semantic analysis.", false);
     CLIFLAG(bool, dump_elc, false, "-E,--dump-elc", "Output the lambda calculus.", false);
     CLIFLAG(bool, dump_lifting, false, "-L,--dump-lifting", "Debug the lambda lifting process.", false);
-    CLIFLAG(bool, dump_gcode, false, "--gc,--dump-gcode", "Dump the compiled G-Machine code.", false);
-    CLIFLAG(bool, dump_gmachine, false, "--gm,--dump-gmachine", "Dump the C++ G-Machine implementation code.", false);
-    CLIFLAG(bool, no_compilation, false, "--nc,--no-comp", "Exit before compiling G-Machine code.", false);
+    CLIFLAG(bool, dump_gcode, false, "-gc,--dump-gcode", "Dump the compiled G-Machine code.", false);
+    CLIFLAG(bool, dump_gmachine, false, "-gm,--dump-gmachine", "Dump the C++ G-Machine implementation code.", false);
+    CLIFLAG(bool, no_compilation, false, "-nc,--no-comp", "Exit before compiling G-Machine code.", false);
+    CLIFLAG(bool, keep_files, false, "-ko,--keep-output", "Keep compiled form of G-Machine code.", false);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -234,9 +237,6 @@ int main(int argc, char *argv[])
         }
     }
     
-    // Not in use.
-    // GCodeToCCompiler gcode_to_c;
-    // gcode_to_c.compile(sc_to_gcode.output);
     GCodeToCXXCompiler gcode_to_cxx;
     gcode_to_cxx.compile(sc_to_gcode.output, dump_gmachine);
 
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS;
     }
 
-    if (!finish_compilation(gcode_to_cxx))
+    if (!finish_compilation(gcode_to_cxx, keep_files))
     {
         fmt::println("An error occurred when trying to compile output program.");
         return EXIT_FAILURE;
