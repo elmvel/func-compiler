@@ -173,8 +173,14 @@ void GInstrPush::compile(std::string& output, CompilerSCoMap& scomap)
     UNUSED(scomap);
     output.append("    // GInstrPush\n");
     // @check This might be correct?
-    // output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::LOCAL, {}) }});\n", offset));
-    output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::ARG, {}) }});\n", offset));
+    if (is_param)
+    {
+        output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::ARG, {}) }});\n", offset));
+    }
+    else
+    {
+        output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::LOCAL, {}) }});\n", offset));
+    }
 }
 
 void GInstrPop::compile(std::string& output, CompilerSCoMap& scomap)

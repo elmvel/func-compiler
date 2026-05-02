@@ -1,3 +1,4 @@
+(*
 let foo: int [x: int, y: int] :=
     let a: int := 1,
     let b: int := 2,
@@ -7,9 +8,8 @@ end
 let main: int [] :=
     foo 3 7
 end
-(* Expected answer = 17 *)
+*)
 
-(*
 let scaleA: int [x: int] :=
     x * 10
 end
@@ -18,7 +18,10 @@ let scaleB: int [x: int] :=
     x * 37
 end
 
-let main: int [] :=
+let mainZ: int [] :=
     (scaleA 14) + (scaleB 34)
 end
-*)
+
+let main: int [] :=
+    (scaleB (scaleA (scaleB 34))) + (scaleA (scaleB (scaleA 35)))
+end

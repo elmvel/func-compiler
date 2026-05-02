@@ -76,14 +76,15 @@ struct GInstrPushGlobal : GInstr
 
 struct GInstrPush : GInstr
 {
-    GInstrPush(int offset)
-        : offset(offset)
+    GInstrPush(int offset, bool is_param)
+        : offset(offset), is_param(is_param)
     {}
 
     virtual void dump(int level);
     virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     int offset;
+    bool is_param;
 };
 
 struct GInstrPop : GInstr

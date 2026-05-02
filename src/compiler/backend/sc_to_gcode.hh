@@ -7,13 +7,30 @@
 #include "./ginstr.hh"
 #include "./lambda_lifting.hh"
 
+// Slightly hack-ish
+struct GCodeVar
+{
+    // TODO: This should not be needed, unless that was a silent
+    // property of keeping this as just an int.
+    GCodeVar()
+        : offset(), is_param()
+    {}
+    
+    GCodeVar(int offset, bool is_param)
+        : offset(offset), is_param(is_param)
+    {}
+
+    int offset;
+    bool is_param;
+};
+
 struct GCodeEnv
 {
     GCodeEnv(int depth)
         : offset_map(), depth(depth)
     {}
     
-    std::unordered_map<std::string, int> offset_map;
+    std::unordered_map<std::string, GCodeVar> offset_map;
     int depth;
 };
 

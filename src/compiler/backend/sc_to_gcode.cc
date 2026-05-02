@@ -30,9 +30,9 @@ void compile_builtins(SCToGCodeCompiler *compiler)
 {
     // TODO: make sure this compiles
     compiler->output.push_back(std::make_unique<GInstrGlobStart>("ADD", 2));
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
     compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Add));
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
@@ -41,9 +41,9 @@ void compile_builtins(SCToGCodeCompiler *compiler)
     compiler->output.push_back(std::make_unique<GInstrGlobEnd>("ADD", 2));
 
     compiler->output.push_back(std::make_unique<GInstrGlobStart>("SUB", 2));
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
     compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Sub));
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
@@ -52,9 +52,9 @@ void compile_builtins(SCToGCodeCompiler *compiler)
     compiler->output.push_back(std::make_unique<GInstrGlobEnd>("SUB", 2));
 
     compiler->output.push_back(std::make_unique<GInstrGlobStart>("MUL", 2));
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
     compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Mul));
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
@@ -63,9 +63,9 @@ void compile_builtins(SCToGCodeCompiler *compiler)
     compiler->output.push_back(std::make_unique<GInstrGlobEnd>("MUL", 2));
 
     compiler->output.push_back(std::make_unique<GInstrGlobStart>("DIV", 2));
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
-    compiler->output.push_back(std::make_unique<GInstrPush>(1));
+    compiler->output.push_back(std::make_unique<GInstrPush>(1, true));
     compiler->output.push_back(std::make_unique<GInstrEval>());
     compiler->output.push_back(std::make_unique<GInstrBinOp>(GBinop::Div));
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
@@ -96,7 +96,7 @@ LCNodePtr setup_environment(GCodeEnv& env, LCNodePtr lcbody, int n)
          lambda_ptr != nullptr;
          lambda_ptr = dynamic_cast<LCLambdaNode *>(node.get()))
     {
-        env.offset_map[lambda_ptr->param] = count--;
+        env.offset_map[lambda_ptr->param] = GCodeVar(count--, true);
         node = lambda_ptr->body;
     }
     return node;
@@ -214,7 +214,7 @@ void LCConstructInstanceVisitor::visit(LCLetNode *node)
         compile_construct_instance(output, env, def_ptr->body);
 
         GCodeEnv new_env = *env;
-        new_env.offset_map[def_ptr->var] = env->depth + 1;
+        new_env.offset_map[def_ptr->var] = GCodeVar(env->depth + 1, false);
         new_env.depth = env->depth + 1;
         compile_construct_instance(output, &new_env, node->expr);
 
@@ -252,7 +252,7 @@ void LCConstructInstanceVisitor::visit(LCConstantNode *node)
     if (it != env->offset_map.end()) {
         // Found it, so it's a variable
         // C[[ x ]] = PUSH (d - p(x))
-        output->push_back(std::make_unique<GInstrPush>(env->depth - it->second));
+        output->push_back(std::make_unique<GInstrPush>(env->depth - it->second.offset, it->second.is_param));
     } else {
         // Not found, assume it is a supercombinator or built-in function
         // C[[ f ]] = PUSHGLOBAL f
