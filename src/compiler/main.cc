@@ -7,7 +7,7 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
-#include "CLI11.hpp"
+#include "vendor/CLI11.hpp"
 
 #include "file_reading.hh"
 #include "common.hh"
@@ -22,7 +22,8 @@
 #include "backend/high_to_elc.hh"
 #include "backend/lambda_lifting.hh"
 #include "backend/sc_to_gcode.hh"
-#include "backend/gcode_to_c.hh"
+// #include "backend/gcode_to_c.hh"
+#include "backend/gcode_to_cxx.hh"
 
 #define CLIARG(type, name, def, cli_name, cli_desc, req)   \
     type name = def;                                       \
@@ -126,6 +127,15 @@ LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
     return {visitor_lambda_lifting, lifted};
 }
 
+bool finish_compilation(GCodeToCXXCompiler& gcode_to_cxx)
+{
+    if (!write_file("./out.cc", gcode_to_cxx.code)) return false;
+
+    system("g++ -std=c++20 -o ./f.out ./out.cc");
+
+    return true;
+}
+
 int main(int argc, char *argv[])
 {
     CLI::App app {"A Functional Compiler"};
@@ -139,6 +149,8 @@ int main(int argc, char *argv[])
     CLIFLAG(bool, dump_elc, false, "-E,--dump-elc", "Output the lambda calculus.", false);
     CLIFLAG(bool, dump_lifting, false, "-L,--dump-lifting", "Debug the lambda lifting process.", false);
     CLIFLAG(bool, dump_gcode, false, "--gc,--dump-gcode", "Dump the compiled G-Machine code.", false);
+    CLIFLAG(bool, dump_gmachine, false, "--gm,--dump-gmachine", "Dump the C++ G-Machine implementation code.", false);
+    CLIFLAG(bool, no_compilation, false, "--nc,--no-comp", "Exit before compiling G-Machine code.", false);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -222,6 +234,20 @@ int main(int argc, char *argv[])
         }
     }
     
-    GCodeToCCompiler gcode_to_c;
-    gcode_to_c.compile(sc_to_gcode.output);
+    // Not in use.
+    // GCodeToCCompiler gcode_to_c;
+    // gcode_to_c.compile(sc_to_gcode.output);
+    GCodeToCXXCompiler gcode_to_cxx;
+    gcode_to_cxx.compile(sc_to_gcode.output, dump_gmachine);
+
+    if (no_compilation)
+    {
+        return EXIT_SUCCESS;
+    }
+
+    if (!finish_compilation(gcode_to_cxx))
+    {
+        fmt::println("An error occurred when trying to compile output program.");
+        return EXIT_FAILURE;
+    }
 }

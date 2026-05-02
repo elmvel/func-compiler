@@ -6,6 +6,22 @@
 #include <unordered_map>
 #include <vector>
 
+// This is used more in gcode_to_cxx, but its easier to put here
+struct CompilerSCoMap
+{
+    int fetch_or_insert(const std::string& name);
+    
+    // The GM implementation im referencing always has the first 6 ids
+    // (0..5) mapped, so lets be safe and start at 10.
+    int counter = 10;
+    std::unordered_map<std::string, int> container {
+        {"ADD", 0},
+        {"SUB", 1},
+        {"MUL", 3},
+        {"DIV", 2},
+    };
+};
+
 /*
   Binary operation supported by the G-Machine.
 */
@@ -29,7 +45,7 @@ struct GInstr
     {}
 
     virtual void dump(int level) = 0;
-    virtual void compile(std::string& output) = 0;
+    virtual void compile(std::string& output, CompilerSCoMap& scomap) = 0;
 };
 
 using GInstrPtr = std::unique_ptr<GInstr>;
@@ -41,7 +57,7 @@ struct GInstrPushInt : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     int value;
 };
@@ -53,7 +69,7 @@ struct GInstrPushGlobal : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     std::string name;
 };
@@ -65,7 +81,7 @@ struct GInstrPush : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     int offset;
 };
@@ -77,7 +93,7 @@ struct GInstrPop : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     int n;
 };
@@ -89,7 +105,7 @@ struct GInstrMkApp : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 };
 
 struct GInstrUnwind : GInstr
@@ -98,7 +114,7 @@ struct GInstrUnwind : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 };
 
 struct GInstrUpdate : GInstr
@@ -108,7 +124,7 @@ struct GInstrUpdate : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     int offset;
 };
@@ -120,7 +136,7 @@ struct GInstrPack : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 
     int tag, n;
 };
@@ -131,7 +147,7 @@ struct GInstrSplit : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 };
 
 struct GInstrJump : GInstr
@@ -141,7 +157,7 @@ struct GInstrJump : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     std::vector<std::vector<GInstrPtr>> branches;
     std::unordered_map<int, int> tag_map;
@@ -154,7 +170,7 @@ struct GInstrSlide : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     int n;
 };
@@ -166,7 +182,7 @@ struct GInstrBinOp : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     GBinop binop;
 };
@@ -177,7 +193,7 @@ struct GInstrEval : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 };
 
 struct GInstrAlloc : GInstr
@@ -187,7 +203,7 @@ struct GInstrAlloc : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
     
     int n;
 };
@@ -202,7 +218,7 @@ struct GInstrBegin : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 };
 
 struct GInstrEnd : GInstr
@@ -211,7 +227,7 @@ struct GInstrEnd : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 };
 
 struct GInstrPrint : GInstr
@@ -220,7 +236,7 @@ struct GInstrPrint : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 };
 
 struct GInstrGlobStart : GInstr
@@ -230,7 +246,20 @@ struct GInstrGlobStart : GInstr
     {}
 
     virtual void dump(int level);
-    virtual void compile(std::string& output);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
+
+    std::string name;
+    int n;
+};
+
+struct GInstrGlobEnd : GInstr
+{
+    GInstrGlobEnd(const std::string& name, int n)
+        : name(name), n(n)
+    {}
+
+    virtual void dump(int level);
+    virtual void compile(std::string& output, CompilerSCoMap& scomap);
 
     std::string name;
     int n;

@@ -22,7 +22,8 @@ void SCToGCodeCompiler::compile(LiftedProgram& lp)
         compile_supercombinator(sc_name, lcbody);
     }
 
-    compile_builtins(this);
+    // Gonna see if we can avoid this completely.
+    // compile_builtins(this);
 }
 
 void compile_builtins(SCToGCodeCompiler *compiler)
@@ -37,6 +38,7 @@ void compile_builtins(SCToGCodeCompiler *compiler)
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
     compiler->output.push_back(std::make_unique<GInstrPop>(2));
     compiler->output.push_back(std::make_unique<GInstrUnwind>());
+    compiler->output.push_back(std::make_unique<GInstrGlobEnd>("ADD", 2));
 
     compiler->output.push_back(std::make_unique<GInstrGlobStart>("SUB", 2));
     compiler->output.push_back(std::make_unique<GInstrPush>(1));
@@ -47,6 +49,7 @@ void compile_builtins(SCToGCodeCompiler *compiler)
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
     compiler->output.push_back(std::make_unique<GInstrPop>(2));
     compiler->output.push_back(std::make_unique<GInstrUnwind>());
+    compiler->output.push_back(std::make_unique<GInstrGlobEnd>("SUB", 2));
 
     compiler->output.push_back(std::make_unique<GInstrGlobStart>("MUL", 2));
     compiler->output.push_back(std::make_unique<GInstrPush>(1));
@@ -57,6 +60,7 @@ void compile_builtins(SCToGCodeCompiler *compiler)
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
     compiler->output.push_back(std::make_unique<GInstrPop>(2));
     compiler->output.push_back(std::make_unique<GInstrUnwind>());
+    compiler->output.push_back(std::make_unique<GInstrGlobEnd>("MUL", 2));
 
     compiler->output.push_back(std::make_unique<GInstrGlobStart>("DIV", 2));
     compiler->output.push_back(std::make_unique<GInstrPush>(1));
@@ -67,6 +71,7 @@ void compile_builtins(SCToGCodeCompiler *compiler)
     compiler->output.push_back(std::make_unique<GInstrUpdate>(3));
     compiler->output.push_back(std::make_unique<GInstrPop>(2));
     compiler->output.push_back(std::make_unique<GInstrUnwind>());
+    compiler->output.push_back(std::make_unique<GInstrGlobEnd>("DIV", 2));
 }
 
 int count_arguments(LCNodePtr lcbody)
@@ -125,6 +130,8 @@ void SCToGCodeCompiler::compile_supercombinator(const std::string& sc_name, LCNo
     // }
     
     compile_supercombinator_body(env, inner_body);
+
+    output.push_back(std::make_unique<GInstrGlobEnd>(sc_name, n));
 }
 
 /*

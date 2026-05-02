@@ -15,6 +15,17 @@ std::string_view binop_to_name(GBinop binop)
     }
 }
 
+std::string_view binop_to_vendor(GBinop binop)
+{
+    switch (binop) {
+        case GBinop::Add: return "_int::ADD_M";
+        case GBinop::Sub: return "_int::SUB_M";
+        case GBinop::Mul: return "_int::MUL_M";
+        case GBinop::Div: return "_int::DIV_M";
+        default: INTERNAL_ERROR("Unreachable binop name.");
+    }
+}
+
 void print_indentation(int level)
 {
     for (int i = 0; i < level; ++i)
@@ -132,242 +143,177 @@ void GInstrGlobStart::dump(int level)
     fmt::println("GlobStart({}, {})", name, n);
 }
 
+void GInstrGlobEnd::dump(int level)
+{
+    print_indentation(level);
+    fmt::println("GlobEnd({}, {})", name, n);
+}
+
 /*
   Compilation
 */
-void GInstrPushInt::compile(std::string& output)
+void GInstrPushInt::compile(std::string& output, CompilerSCoMap& scomap)
 {
+    UNUSED(scomap);
     output.append("    // GInstrPushInt\n");
-    output.append("    {\n");
-    output.append(fmt::format("    node_t *node = gm_alloc_node_number({});\n", this->value));
-    output.append(fmt::format("    gm_stack_push(stack, node);\n"));
-    output.append("    }\n");
+    output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::VALUE, {}) }});\n", value));
 }
 
-void GInstrPushGlobal::compile(std::string& output)
+void GInstrPushGlobal::compile(std::string& output, CompilerSCoMap& scomap)
 {
+    int scoid = scomap.fetch_or_insert(name);
+    // Specifically we use push global within the main body,
+    // so we have access to init_code.
     output.append("    // GInstrPushGlobal\n");
-    output.append("    {\n");
-    output.append(fmt::format("    node_t *node = gm_alloc_node_func({});\n", this->name));
-    output.append("    gm_stack_push(stack, node);\n");
-    output.append("    }\n");
+    output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::GLOB, {}) }});\n", scoid));
 }
 
-void GInstrPush::compile(std::string& output)
+void GInstrPush::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    // <n0:n1:...:nk:S, G, PUSH k:C, D>
-    // => <nk:n0:n1:...:nk:S, G, C, D>
+    UNUSED(scomap);
     output.append("    // GInstrPush\n");
-    output.append("    {\n");
-    output.append(fmt::format("    node_t *node = *gm_stack_peek(stack, {});\n", this->offset));
-    output.append("    gm_stack_push(stack, node);\n");
-    output.append("    }\n");
+    // @check This might be correct?
+    // output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::LOCAL, {}) }});\n", offset));
+    output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::ARG, {}) }});\n", offset));
 }
 
-void GInstrPop::compile(std::string& output)
+void GInstrPop::compile(std::string& output, CompilerSCoMap& scomap)
 {
+    UNUSED(scomap);
     output.append("    // GInstrPop\n");
-    output.append(fmt::format("    for (size_t i = 0; i < {}; ++i)\n", n));
-    output.append("    {\n");
-    output.append("    gm_stack_pop(stack);\n");
-    output.append("    }\n");
-    // UNUSED(output);
-    // INTERNAL_ERROR("TODO: GInstrPop");
+    output.append(fmt::format("    code.push_back({{ _int::POP, {} }});\n", n));
 }
 
-void GInstrMkApp::compile(std::string& output)
+void GInstrMkApp::compile(std::string& output, CompilerSCoMap& scomap)
 {
+    UNUSED(scomap);
     output.append("    // GInstrMkApp\n");
-    output.append("    {\n");
-    output.append("    if (stack->count < 2) RUNTIME_ERROR(\"Not enough on the stack for MkApp.\");\n");
-    output.append("    node_t *n1 = gm_stack_pop(stack);\n");
-    output.append("    node_t *n2 = gm_stack_pop(stack);\n");
-    output.append("    node_t *n  = gm_alloc_node_app(n1, n2);\n");
-    output.append("    gm_stack_push(stack, n);\n");
-    output.append("    }\n");
-    // UNUSED(output);
-    // INTERNAL_ERROR("TODO: GInstrMkApp");
-}
-
-void GInstrUnwind::compile(std::string& output)
-{
-    output.append("    // GInstrUnwind\n");
+    // 
     /*
-      for (;;) {
-          node_t *node = *gm_stack_peek(stack, 0);
-          if (node->tag == NInteger) {
-              // Restore saved stack and code from the dump, and put the node on top of the restored stack.
-              break;
-          } else if (node->tag == NApply) {
-              // node->data.app.fun gets pushed onto the stack, repeat UNWIND
-              gm_stack_push(stack, node->data.app.fun);
-              // Somehow repeat UNWIND, maybe keep all of this in a loop?
-              // ^- Thus, do not break here.
-          } else if (node->tag == NFunc) {
-              // Also check if there are enough arguments on the stack
+      For some reason, the vendor implementation ordered it
+        n0 n1 ... bot : Stack, G[]
+        MKAP
+          -> n ... bot : Stack, G[n = App n1 n0]
 
-              // If there are enough arguments...
-              // Rearrange the stack as per Section 18.5.1 (SPJ),
-              //   and begin executing the code for the function
-
-              // If there are NOT enough arguments...
-              // Restore saved stack and code from the dump, and put the node on top of the restored stack.
-              break;
-          }
-      }
-    */
-    // We're just going to omit this to see what else I can implement before coming back here.
-    // INTERNAL_ERROR("TODO: GInstrUnwind");
-    fmt::println("Warning: UNWIND not implemented yet.");
+      Peyton Jones orders it the other way, so we will keep with this convention.
+     */
+    output.append("    code.push_back({_int::MKAPSPJ, std::monostate()});\n");
 }
 
-void GInstrUpdate::compile(std::string& output)
+void GInstrUnwind::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    // n0 n1 n2 n3 n4 n5 .. nk
-    //this->offset;
+    UNUSED(scomap);
+    output.append("    // GInstrUnwind\n");
+    output.append("    code.push_back({_int::UNWIND, std::monostate()});\n");
+}
+
+void GInstrUpdate::compile(std::string& output, CompilerSCoMap& scomap)
+{
+    UNUSED(scomap);
     output.append("    // GInstrUpdate\n");
-    output.append("    {\n");
-    output.append(fmt::format("    if (stack->count <= {}) RUNTIME_ERROR(\"Not enough stack space for Update {}\");\n", offset, offset));
-    output.append("    node_t *top = *gm_stack_peek(stack, 0);\n");
-    output.append("    node_t *ind = gm_alloc_node_ind(top);");
-    output.append(fmt::format("    node_t **to_replace = gm_stack_peek(stack, {});\n", offset));
-    output.append("    *to_replace = ind;\n");
-    output.append("    }\n");
-    // UNUSED(output);
-    // INTERNAL_ERROR("TODO: GInstrUpdate");
+    output.append(fmt::format("    code.push_back({{ _int::UPDATE, {} }});\n", offset));
 }
 
-void GInstrPack::compile(std::string& output)
+void GInstrPack::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append("    // GInstrPack\n");
     UNUSED(output);
+    UNUSED(scomap);
     INTERNAL_ERROR("TODO: GInstrPack");
 }
 
-void GInstrSplit::compile(std::string& output)
+void GInstrSplit::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append("    // GInstrSplit\n");
     UNUSED(output);
+    UNUSED(scomap);
     INTERNAL_ERROR("TODO: GInstrSplit");
 }
 
-void GInstrJump::compile(std::string& output)
+void GInstrJump::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append("    // GInstrJump\n");
     UNUSED(output);
+    UNUSED(scomap);
     INTERNAL_ERROR("TODO: GInstrJump");
 }
 
-void GInstrSlide::compile(std::string& output)
+void GInstrSlide::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    // for k = 3:
-    // n0 n1 n2 n3 n4 n5 n6
-    // =>
-    //          n0 n4 n5 n6
-
-    // node n = pop()
-    // for k-1 times: pop()
-    // set the top node to n
-
+    UNUSED(scomap);
     output.append("    // GInstrSlide\n");
-    output.append("    {\n");
-    output.append("    node_t *node = gm_stack_pop(stack);\n");
-    output.append(fmt::format("    for (int i = 0; i < {} - 1; ++i) gm_stack_pop(stack);\n", this->n));
-    // The top of the stack should now be where the node should go.
-    output.append("    node_t **replace_addr = gm_stack_peek(stack, 0);\n");
-    output.append("    *replace_addr = node;\n");
-    output.append("    }\n");
+    output.append(fmt::format("    code.push_back({{ _int::SLIDE, {} }});\n", n));
 }
 
-void GInstrBinOp::compile(std::string& output)
+void GInstrBinOp::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append(fmt::format("    // GInstrBinOp({})\n", binop_to_name(this->binop)));
-    output.append("    {\n");
-    output.append("    node_t *n1 = gm_stack_pop(stack);\n");
-    output.append("    node_t *n2 = gm_stack_pop(stack);\n");
-    switch (this->binop) {
-        case GBinop::Add: {
-            output.append("    int res = n1->data.number.value + n2->data.number.value;\n");
-        } break;
-        case GBinop::Sub: {
-            output.append("    int res = n1->data.number.value - n2->data.number.value;\n");
-        } break;
-        case GBinop::Mul: {
-            output.append("    int res = n1->data.number.value * n2->data.number.value;\n");
-        } break;
-        case GBinop::Div: {
-            output.append("    int res = n1->data.number.value / n2->data.number.value;\n");
-        } break;
-    }
-    output.append("    node_t *node = gm_alloc_node_number(res);\n");
-    output.append("    gm_stack_push(stack, node);\n");
-    output.append("    }\n");
+    UNUSED(scomap);
+    std::string_view name = binop_to_name(binop);
+    std::string_view vname = binop_to_vendor(binop);
+    output.append(fmt::format("    // GInstrBinOp({})\n", name));
+    output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::GLOB, {}) }});\n", vname));
+    output.append("    code.push_back({_int::MKAPSPJ, std::monostate()});\n");
+    output.append("    code.push_back({_int::MKAPSPJ, std::monostate()});\n");
+    // @check Might need more work
 }
 
-void GInstrEval::compile(std::string& output)
+void GInstrEval::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    // BOOKMARK: pg 323
+    UNUSED(scomap);
     output.append("    // GInstrEval\n");
-    output.append("    {\n");
-    output.append("    gm_stack_update_top(stack);\n");
-    output.append("    if (stack->top == NULL) RUNTIME_ERROR(\"Stack had a null top during GInstrEval.\");\n");
-    output.append("    switch ((*stack->top)->tag) {\n");
-    output.append("        case NApply: RUNTIME_ERROR(\"EVAL NOT IMPLEMENTED YET\"); break;\n");
-    output.append("        case NFunc: RUNTIME_ERROR(\"EVAL NOT IMPLEMENTED YET\"); break;\n");
-    output.append("        default: break; // Do nothing\n");
-    output.append("    }\n");
-    output.append("    }\n");
-    // UNUSED(output);
-    // INTERNAL_ERROR("TODO: GInstrEval");
-    fmt::println("Warning: EVAL not implemented for Application or Function nodes.");
+    output.append("    code.push_back({ _int::EVAL, std::monostate() });\n");
 }
 
-void GInstrAlloc::compile(std::string& output)
+void GInstrAlloc::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append("    // GInstrAlloc\n");
     UNUSED(output);
+    UNUSED(scomap);
     INTERNAL_ERROR("TODO: GInstrAlloc");
 }
 
-void GInstrBegin::compile(std::string& output)
+void GInstrBegin::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append("    // GInstrBegin\n");
+    UNUSED(scomap);
+    output.append("// GInstrBegin\n");
     output.append(
-        "int main(void) {\n"
-        "    stack_t real_stack = {0};\n"
-        "    stack_t *stack = &real_stack;\n"
+        "int compiled_program(GMSCoMap* globals) {\n"
+        "    std::vector<_int::GmInstr> code{};\n"
         );
 }
 
-void GInstrEnd::compile(std::string& output)
+void GInstrEnd::compile(std::string& output, CompilerSCoMap& scomap)
 {
+    UNUSED(scomap);
     output.append("    // GInstrEnd\n");
     output.append(
-        "    gm_stack_free(stack);\n"
-        "    return 0;\n"
+        "    std::reverse(code.begin(), code.end());\n"
+        "    _int::i_stack<_int::GmInstr> init{};\n"
+        "    init.insert(std::move(code));\n"
+        "    _int::G_machine g = {globals, _int::stack_i{}, _int::dump_t{}, std::move(init)};\n"
+        "    return g.eval();\n"
         "}\n"
+        "void register_supercombinators(GMSCoMap* globals) {\n"
+        "    std::vector<_int::GmInstr> code{};\n"
         );
 }
 
-void GInstrPrint::compile(std::string& output)
+void GInstrPrint::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append("    // GInstrPrint\n");
-    output.append("    {\n");
-    output.append("    gm_stack_update_top(stack);\n");
-    output.append("    if ((*stack->top)->tag == NInteger)");
-    output.append("        printf(\"%d\", (*stack->top)->data.number.value);\n");
-    output.append("    else RUNTIME_ERROR(\"Printing CONS cells not implemented.\");\n");
-    output.append("    }\n");
-    // UNUSED(output);
-    // INTERNAL_ERROR("TODO: GInstrPrint");
+    UNUSED(output);
+    UNUSED(scomap);
+    // I think it's easiest I just leave this to the runtime, we'll omit this.
 }
 
-void GInstrGlobStart::compile(std::string& output)
+void GInstrGlobStart::compile(std::string& output, CompilerSCoMap& scomap)
 {
-    output.append("// GInstrGlobStart\n");
-    output.append("void gm_global_");
-    output.append(this->name);
-    output.append("(stack_t *stack) {\n");
-    // UNUSED(output);
-    // INTERNAL_ERROR("TODO: GInstrGlobStart");
+    UNUSED(scomap);
+    output.append("    // GInstrGlobStart\n");
+    // We reuse the code block for every supercombinator.
+    output.append("    code = {};\n");
+}
+
+void GInstrGlobEnd::compile(std::string& output, CompilerSCoMap& scomap)
+{
+    int scoid = scomap.fetch_or_insert(name);
+
+    output.append("    // GInstrGlobEnd\n");
+    output.append("    std::reverse(code.begin(), code.end());\n");
+    output.append(fmt::format("    (*globals)[{}] = {{ {}, std::move(code) }};\n", scoid, n));
 }

@@ -22,3 +22,18 @@ std::optional<std::string> read_file(const std::string& file_path)
 
     return content;
 }
+
+bool write_file(const std::string& file_path, const std::string& file_contents)
+{
+    std::ofstream file(file_path);
+
+    if (!file.is_open()) {
+        fmt::println(stderr, "error: Could not open {}.", file_path);
+        return false;
+    }
+
+    file << file_contents;
+    file.close();
+
+    return true;
+}
