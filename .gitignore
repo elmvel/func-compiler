@@ -1,1 +1,4 @@
 /build/
+/src/runtime-probe/
+/out.cc
+/f.out
