@@ -1,0 +1,18 @@
+(*
+    The example I used for PACISE & MU Thesis
+
+    Shows most useful features implemented,
+    like function applications, local bindings,
+    and usage of function parameters.
+*)
+
+let foo: int [x: int, y: int] :=
+    let a: int := 1,
+    let b: int := 2,
+    (a * x) + (b * y)
+end
+
+(* Verified result from Python: 17 *)
+let main: int [] :=
+    foo 3 7
+end

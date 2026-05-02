@@ -1,0 +1,25 @@
+(*
+    Showing nested expressions & binary operators.
+
+    Here we show that operations like (a - b) are performed
+    correctly, and we nest several function applications and
+    still get the correct result.
+*)
+
+let computeA: int [x: int, y: int] :=
+    let i: int := 370,
+    let j: int := 380,
+    (x * i) - (y * j)
+end
+
+let computeB: int [x: int, y: int] :=
+    let i: int := 420,
+    let j: int := 476,
+    (x * i) - (y * j)
+end
+
+(* Verified result from Python: 248107520 *)
+let main: int [] :=
+    (computeB (computeA (computeB 8 6) 7) 5)
+    + (computeA (computeB (computeA 3 0) 9) 9)
+end

@@ -1,0 +1,12 @@
+(*
+    The most basic program possible.
+
+    Note that this does not behave like C/C++ main().
+    The return value is not an exit code, just the general
+    result of running the program.
+*)
+
+(* Obviously, the expected result is 1337 *)
+let main: int [] :=
+    1337
+end
