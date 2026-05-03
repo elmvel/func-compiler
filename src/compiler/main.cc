@@ -22,8 +22,8 @@
 #include "backend/high_to_elc.hh"
 #include "backend/lambda_lifting.hh"
 #include "backend/sc_to_gcode.hh"
-// #include "backend/gcode_to_c.hh"
 #include "backend/gcode_to_cxx.hh"
+#include "backend/elc_to_simple.hh"
 
 #define CLIARG(type, name, def, cli_name, cli_desc, req)   \
     type name = def;                                       \
@@ -127,6 +127,31 @@ LiftedProgram perform_lambda_lifting(LCNodePtr prog, bool print)
     return {visitor_lambda_lifting, lifted};
 }
 
+bool finish_simple_compilation(LCNodePtr elc_prog, bool keep_files)
+{
+    LCSimpleVisitor elc_to_simple;
+
+    // Prelude
+    auto file_opt = read_file("./src/compiler/backend/simple.cc");
+    if (!file_opt.has_value()) {
+        INTERNAL_ERROR("Could not find simple.cc");
+    }
+    elc_to_simple.output.append(file_opt.value());
+
+    elc_to_simple.output.append("SLCNodePtr get_program()\n{\n");
+    elc_prog->accept(&elc_to_simple);
+    elc_to_simple.output.append(fmt::format("    auto __expr__ = __{};\n", elc_to_simple.last_temp()));
+    elc_to_simple.output.append("    return __expr__;\n}\n");
+
+    if (!write_file("./out.cc", elc_to_simple.output)) return false;
+
+    system("g++ -std=c++20 -o ./f.out ./out.cc");
+    if (!keep_files)
+        system("rm ./out.cc");
+
+    return true;
+}
+
 bool finish_compilation(GCodeToCXXCompiler& gcode_to_cxx, bool keep_files)
 {
     if (!write_file("./out.cc", gcode_to_cxx.code)) return false;
@@ -149,6 +174,7 @@ int main(int argc, char *argv[])
     CLIFLAG(bool, dump_ast, false, "--ast,--dump-ast", "Output parse tree.", false);
     CLIFLAG(bool, no_sema, false, "--ns,--no-sema", "Exit before semantic analysis.", false);
     CLIFLAG(bool, dump_elc, false, "-E,--dump-elc", "Output the lambda calculus.", false);
+    CLIFLAG(bool, compile_simple, false, "--O0,--comp-simple", "Skip G-Machine optimization.", false);
     CLIFLAG(bool, dump_lifting, false, "-L,--dump-lifting", "Debug the lambda lifting process.", false);
     CLIFLAG(bool, dump_gcode, false, "-C,--dump-gcode", "Dump the compiled G-Machine code.", false);
     CLIFLAG(bool, dump_gmachine, false, "-G,--dump-gmachine", "Dump the C++ G-Machine implementation code.", false);
@@ -222,6 +248,16 @@ int main(int argc, char *argv[])
         LCNodePtr prog = visitor_elc.v_elc.value;
         prog->accept(&visitor_elc_trace);
         fmt::println("{}", visitor_elc_trace.v_text.read_asserted());
+    }
+
+    if (compile_simple)
+    {
+        LCNodePtr elc_prog = visitor_elc.v_elc.read_asserted();
+        if (!finish_simple_compilation(elc_prog, keep_files))
+        {
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
     }
 
     LCNodePtr elc_prog = visitor_elc.v_elc.read_asserted();

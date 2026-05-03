@@ -5,6 +5,11 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
+
+#include <fmt/core.h>
+
+#include "../common.hh"
 
 /*
   Syntax referenced from "The Implementation of Functional Programming Languages"
