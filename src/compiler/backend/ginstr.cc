@@ -11,6 +11,7 @@ std::string_view binop_to_name(GBinop binop)
         case GBinop::Sub: return "Sub";
         case GBinop::Mul: return "Mul";
         case GBinop::Div: return "Div";
+        case GBinop::Equ: return "Equ";
         default: INTERNAL_ERROR("Unreachable binop name.");
     }
 }
@@ -22,6 +23,7 @@ std::string_view binop_to_vendor(GBinop binop)
         case GBinop::Sub: return "_int::SUB_M";
         case GBinop::Mul: return "_int::MUL_M";
         case GBinop::Div: return "_int::DIV_M";
+        case GBinop::Equ: return "_int::EQU_M";
         default: INTERNAL_ERROR("Unreachable binop name.");
     }
 }
@@ -257,7 +259,6 @@ void GInstrBinOp::compile(std::string& output, CompilerSCoMap& scomap)
     output.append(fmt::format("    code.push_back({{ _int::PUSH, std::pair(_int::GLOB, {}) }});\n", vname));
     output.append("    code.push_back({_int::MKAPSPJ, std::monostate()});\n");
     output.append("    code.push_back({_int::MKAPSPJ, std::monostate()});\n");
-    // @check Might need more work
 }
 
 void GInstrEval::compile(std::string& output, CompilerSCoMap& scomap)

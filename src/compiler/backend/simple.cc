@@ -107,6 +107,9 @@ std::unordered_map<std::string, std::function<SLCNodePtr(SLCNodePtr, SLCNodePtr)
     std::pair {"DIV", [](SLCNodePtr lhs, SLCNodePtr rhs) {
         return std::make_shared<SLCNode>(INT, std::get<INT>(lhs->data) / std::get<INT>(rhs->data));
     }},
+    std::pair {"EQU", [](SLCNodePtr lhs, SLCNodePtr rhs) {
+        return std::make_shared<SLCNode>(INT, std::get<INT>(lhs->data) == std::get<INT>(rhs->data));
+    }},
 };
 
 // Display a node to stdout
@@ -235,24 +238,54 @@ void eval(SLCStack& stack, SLCNodePtr expr)
                 node = walk(stack, app);
             } break;
             case BIF: {
-                // All supported built-ins require 2 arguments.
-                assert(stack.depth() - 1 >= 2);
                 const std::string& name = std::get<std::string>(node->data);
-                SLCNodePtr& redex = stack.at(stack.depth() - 3);
-                SLCNodePtr& inner = std::get<APP>(redex->data).fun;
-                SLCNodePtr& lhs = std::get<APP>(inner->data).arg;
-                SLCNodePtr& rhs = std::get<APP>(redex->data).arg;
-                stack.save();
-                eval(stack, lhs);
-                stack.restore();
-                stack.save();
-                eval(stack, rhs);
-                stack.restore();
-                SLCNodePtr result = builtin_map[name](lhs, rhs);
 
-                // Physically overwrite the node.
-                redex->data = result->data;
-                redex->tag = result->tag;
+                if (name == "IF")
+                {
+                    assert(stack.depth() - 1 >= 3);
+                    SLCNodePtr& redex = stack.at(stack.depth() - 4);
+                    SLCNodePtr& apptrue = std::get<APP>(redex->data).fun;
+                    SLCNodePtr& appcond = std::get<APP>(apptrue->data).fun;
+                    SLCNodePtr& cond = std::get<APP>(appcond->data).arg;
+                    SLCNodePtr& extrue = std::get<APP>(apptrue->data).arg;
+                    SLCNodePtr& exfalse = std::get<APP>(redex->data).arg;
+                    stack.save();
+                    eval(stack, cond);
+                    stack.restore();
+
+                    SLCNodePtr result;
+                    if (std::get<INT>(cond->data) != 0)
+                    {
+                        result = extrue;
+                    }
+                    else
+                    {
+                        result = exfalse;
+                    }
+
+                    // Physically overwrite the node.
+                    redex->data = result->data;
+                    redex->tag = result->tag;
+                }
+                else
+                {
+                    assert(stack.depth() - 1 >= 2);
+                    SLCNodePtr& redex = stack.at(stack.depth() - 3);
+                    SLCNodePtr& inner = std::get<APP>(redex->data).fun;
+                    SLCNodePtr& lhs = std::get<APP>(inner->data).arg;
+                    SLCNodePtr& rhs = std::get<APP>(redex->data).arg;
+                    stack.save();
+                    eval(stack, lhs);
+                    stack.restore();
+                    stack.save();
+                    eval(stack, rhs);
+                    stack.restore();
+                    SLCNodePtr result = builtin_map[name](lhs, rhs);
+                    
+                    // Physically overwrite the node.
+                    redex->data = result->data;
+                    redex->tag = result->tag;
+                }
             } break;
 
             case INT:

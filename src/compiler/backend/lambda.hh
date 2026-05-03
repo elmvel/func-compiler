@@ -64,7 +64,9 @@ struct FreeVarsEnv
         "ADD",
         "SUB",
         "MUL",
-        "DIV"
+        "DIV",
+        "EQU",
+        "IF",
     };
     LevelNo level;
 };

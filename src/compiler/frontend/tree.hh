@@ -35,6 +35,7 @@ struct TreeBinopNode;
 struct TreeApplyNode;
 struct TreeMatchNode;
 struct TreeMatchArmNode;
+struct TreeIfNode;
 struct TreeIdentNode;
 struct TreeIntegerNode;
 struct TreeStringNode;
@@ -49,6 +50,7 @@ struct ITreeVisitor
     virtual void visit(TreeApplyNode *node) = 0;
     virtual void visit(TreeMatchNode *node) = 0;
     virtual void visit(TreeMatchArmNode *node) = 0;
+    virtual void visit(TreeIfNode *node) = 0;
     virtual void visit(TreeIdentNode *node) = 0;
     virtual void visit(TreeIntegerNode *node) = 0;
     virtual void visit(TreeStringNode *node) = 0;
@@ -204,6 +206,25 @@ struct TreeMatchArmNode : TreeNode
 
     std::unique_ptr<TreeNode> pattern;
     std::unique_ptr<TreeNode> body;
+};
+
+struct TreeIfNode : TreeNode
+{
+    TreeIfNode(std::unique_ptr<TreeNode>& cond, std::unique_ptr<TreeNode>& extrue, std::unique_ptr<TreeNode>& exfalse)
+        : cond(std::move(cond)), extrue(std::move(extrue)), exfalse(std::move(exfalse))
+    {}
+
+    virtual ~TreeIfNode()
+    {}
+
+    virtual void accept(ITreeVisitor *visitor)
+    {
+        visitor->visit(this);
+    }
+
+    std::unique_ptr<TreeNode> cond;
+    std::unique_ptr<TreeNode> extrue;
+    std::unique_ptr<TreeNode> exfalse;
 };
 
 struct TreeIdentNode : TreeNode

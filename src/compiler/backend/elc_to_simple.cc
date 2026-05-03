@@ -34,8 +34,6 @@ void LCSimpleVisitor::visit(LCLetNode *node)
         def->body->accept(this);
         bindings[def->var] = last_temp();
     }
-    // This should be enough, we take advantage of C++'s
-    // symbol tables to implement the LetRecs for us.
     node->expr->accept(this);
 }
 
@@ -69,7 +67,9 @@ void LCSimpleVisitor::visit(LCConstantNode *node)
         "ADD",
         "SUB",
         "MUL",
-        "DIV"
+        "DIV",
+        "EQU",
+        "IF",
     };
 
     std::string type {};

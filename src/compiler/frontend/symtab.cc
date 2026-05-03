@@ -76,6 +76,13 @@ void TreeSymtabVisitor::visit(TreeMatchArmNode *node)
     node->body->accept(this);
 }
 
+void TreeSymtabVisitor::visit(TreeIfNode *node)
+{
+    node->cond->accept(this);
+    node->extrue->accept(this);
+    node->exfalse->accept(this);
+}
+
 void TreeSymtabVisitor::visit(TreeApplyNode *node)
 {
     node->func->accept(this);

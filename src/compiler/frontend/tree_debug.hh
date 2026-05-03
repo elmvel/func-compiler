@@ -132,6 +132,23 @@ struct TreeTraceVisitor : ITreeVisitor
         text = local_text;
     }
 
+    virtual void visit(TreeIfNode *node)
+    {
+        std::string local_text = "If(";
+
+        node->cond->accept(this);
+        local_text.append(text);
+        local_text.append(", ");
+        node->extrue->accept(this);
+        local_text.append(text);
+        local_text.append(", ");
+        node->exfalse->accept(this);
+        local_text.append(text);
+        local_text.append(")");
+
+        text = local_text;
+    }
+
     virtual void visit(TreeIdentNode *node)
     {
         text = node->name;

@@ -181,6 +181,40 @@ void TreeSemaVisitor::visit(TreeMatchArmNode *node)
     }
 }
 
+void TreeSemaVisitor::visit(TreeIfNode *node)
+{
+    node->cond->accept(this);
+    TypePtr cond_type = v_type.read_or(std::make_shared<Type>(TypePrimitive::Integer));
+    TypePrimitive* cond_prim = std::get_if<TypePrimitive>(&cond_type->storage);
+    if (cond_prim == nullptr)
+    {
+        COMPILER_ERROR("Condition was not a primitive! Condition must result in an integer!");
+        valid = false;
+        return;
+    }
+    if (*cond_prim != TypePrimitive::Integer)
+    {
+        COMPILER_ERROR("Condition must be a string!");
+        COMPILER_NOTE("Condition was of type `{}`.", *cond_type);
+        valid = false;
+        return;
+    }
+
+    node->extrue->accept(this);
+    TypePtr extrue_type = v_type.read_or(std::make_shared<Type>(TypePrimitive::Integer));
+    node->exfalse->accept(this);
+    TypePtr exfalse_type = v_type.read_or(std::make_shared<Type>(TypePrimitive::Integer));
+    if (*extrue_type != *exfalse_type)
+    {
+        COMPILER_ERROR("If expression branch types must match!");
+        COMPILER_NOTE("True branch was of type `{}` while false was of type `{}`.", *extrue_type, *exfalse_type);
+        valid = false;
+        return;
+    }
+
+    v_type.write(extrue_type);
+}
+
 void TreeSemaVisitor::visit(TreeIdentNode *node)
 {
     if (v_insert.is_valid() && v_insert.read_asserted()) {

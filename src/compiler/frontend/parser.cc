@@ -12,10 +12,11 @@ enum class Assoc {
 };
 
 std::map<TokenType, std::pair<int, Assoc>> g_binary_ops = {
-    {TokenType::Add, {0, Assoc::Left}},
-    {TokenType::Sub, {0, Assoc::Left}},
-    {TokenType::Mul, {1, Assoc::Left}},
-    {TokenType::Div, {1, Assoc::Left}},
+    {TokenType::Equ, {0, Assoc::Left}},
+    {TokenType::Add, {1, Assoc::Left}},
+    {TokenType::Sub, {1, Assoc::Left}},
+    {TokenType::Mul, {2, Assoc::Left}},
+    {TokenType::Div, {2, Assoc::Left}},
 };
 
 std::unique_ptr<TreeNode> Parser::parse_program()
@@ -178,6 +179,7 @@ std::unique_ptr<TreeNode> Parser::parse_expr(int precedence)
 bool Parser::could_start_primary() {
     if (has_token(TokenType::LParen)) return true;
     if (has_token(TokenType::Id)) return true;
+    if (has_token(TokenType::If)) return true;
     if (has_token(TokenType::Integer)) return true;
     if (has_token(TokenType::String)) return true;
     return false;
@@ -204,6 +206,14 @@ std::unique_ptr<TreeNode> Parser::parse_primary_expr(bool apply)
         }
 
         return lhs;
+    } else if (has_token(TokenType::If)) {
+        match(m_head_token.value());
+        std::unique_ptr<TreeNode> expr_cond = parse_expr(0);
+        match(TokenType::Then);
+        std::unique_ptr<TreeNode> expr_true = parse_expr(0);
+        match(TokenType::Else);
+        std::unique_ptr<TreeNode> expr_false = parse_expr(0);
+        return std::make_unique<TreeIfNode>(expr_cond, expr_true, expr_false);
     } else if (has_token(TokenType::Match)) {
         // Match Case
         next_token();

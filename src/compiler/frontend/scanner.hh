@@ -25,6 +25,7 @@ enum class TokenType
     Sub,
     Mul,
     Div,
+    Equ,
     Arrow,
     And,
     Dot,

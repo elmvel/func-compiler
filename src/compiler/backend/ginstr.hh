@@ -19,6 +19,8 @@ struct CompilerSCoMap
         {"SUB", 1},
         {"MUL", 3},
         {"DIV", 2},
+        {"EQU", 4},
+        {"IF", 5},
     };
 };
 
@@ -31,6 +33,7 @@ enum class GBinop
     Sub,
     Mul,
     Div,
+    Equ,
 };
 
 void print_indentation(int level);

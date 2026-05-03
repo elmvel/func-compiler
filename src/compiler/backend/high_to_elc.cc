@@ -142,6 +142,7 @@ std::string token_to_builtin(TokenType token)
     case TokenType::Sub: return "SUB";
     case TokenType::Mul: return "MUL";
     case TokenType::Div: return "DIV";
+    case TokenType::Equ: return "EQU";
     default: COMPILER_ERROR_TERM("Unknown builtin");
     }
 }
@@ -202,6 +203,22 @@ void TreeToELCVisitor::visit(TreeMatchArmNode *node)
 {
     (void)node;
     COMPILER_ERROR_TERM("TODO: High->ELC for TreeMatchArmNode");
+}
+
+void TreeToELCVisitor::visit(TreeIfNode *node)
+{
+    node->cond->accept(this);
+    LCNodePtr elc_cond = v_elc.read_asserted();
+    node->extrue->accept(this);
+    LCNodePtr elc_extrue = v_elc.read_asserted();
+    node->exfalse->accept(this);
+    LCNodePtr elc_exfalse = v_elc.read_asserted();
+
+    LCNodePtr elc_fn = std::make_shared<LCConstantNode>("IF");
+    LCNodePtr elc_ifcond = std::make_shared<LCApplyNode>(elc_fn, elc_cond);
+    LCNodePtr elc_ifcondt = std::make_shared<LCApplyNode>(elc_ifcond, elc_extrue);
+    LCNodePtr elc_ifcondtf = std::make_shared<LCApplyNode>(elc_ifcondt, elc_exfalse);
+    v_elc.write(elc_ifcondtf);
 }
 
 void TreeToELCVisitor::visit(TreeIdentNode *node)

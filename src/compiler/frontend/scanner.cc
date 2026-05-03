@@ -14,6 +14,7 @@ std::vector<std::pair<std::string, TokenType>> g_token_symbols = {
     {"-", TokenType::Sub},
     {"*", TokenType::Mul},
     {"/", TokenType::Div},
+    {"=", TokenType::Equ},
     {"&", TokenType::And},
     {".", TokenType::Dot},
     {":", TokenType::Colon},
@@ -50,6 +51,7 @@ auto fmt::formatter<TokenType>::format(TokenType c, fmt::v10::format_context& ct
   case TokenType::Sub:      name="Sub";      break;
   case TokenType::Mul:      name="Mul";      break;
   case TokenType::Div:      name="Div";      break;
+  case TokenType::Equ:      name="Equ";      break;
   case TokenType::Arrow:    name="Arrow";    break;
   case TokenType::And:      name="And";      break;
   case TokenType::Dot:      name="Dot";      break;

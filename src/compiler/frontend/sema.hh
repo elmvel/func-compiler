@@ -75,6 +75,7 @@ struct TreeSemaVisitor : ITreeVisitor
     virtual void visit(TreeApplyNode *node);
     virtual void visit(TreeMatchNode *node);
     virtual void visit(TreeMatchArmNode *node);
+    virtual void visit(TreeIfNode *node);
     virtual void visit(TreeIdentNode *node);
     virtual void visit(TreeIntegerNode *node);
     virtual void visit(TreeStringNode *node);
