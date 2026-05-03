@@ -4,7 +4,6 @@
 
 using namespace LE;
 
-//using GMInstrs = std::vector<_int::GmInstr>;
 using GMSCoMap = std::map<int, _int::SCo>;
 
 int compiled_program(GMSCoMap* globals);

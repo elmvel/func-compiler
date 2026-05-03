@@ -90,8 +90,6 @@ struct SLCStack
     std::vector<std::vector<SLCNodePtr>> dump;
 };
 
-// NOTE: may need to reference Chapter 11 to correctly implement finding the next redex.
-
 void eval(SLCStack& stack, SLCNodePtr expr);
 
 std::unordered_map<std::string, std::function<SLCNodePtr(SLCNodePtr, SLCNodePtr)>> builtin_map = {
@@ -141,18 +139,6 @@ void print(SLCNodePtr node)
         } break;
     }
 }
-// void print(SLCNodePtr node)
-// {
-//     switch (node->tag)
-//     {
-//         case INT: printf("%d\n", std::get<INT>(node->data)); break;
-//         case VAR:
-//         case APP:
-//         case LAM:
-//         case BIF:
-//             assert(0 && "Unsupported node in print");
-//     }
-// }
 
 // *Recursively* copy body, substituting variables for a given value.
 // This is precisely the operation that supercombinator compilation
@@ -312,19 +298,3 @@ int main()
 
     return EXIT_SUCCESS;
 }
-
-// SLCNodePtr get_program()
-// {
-//     auto x = std::make_shared<SLCNode>(VAR, "x");
-//     auto y = std::make_shared<SLCNode>(VAR, "y");
-//     auto ADD = std::make_shared<SLCNode>(BIF, "ADD");
-//     auto addX = std::make_shared<SLCNode>(APP, SLCNodeApp {ADD, x});
-//     auto addXY = std::make_shared<SLCNode>(APP, SLCNodeApp {addX, y});
-//     auto l1 = std::make_shared<SLCNode>(LAM, SLCNodeLam {"y", addXY});
-//     auto l2 = std::make_shared<SLCNode>(LAM, SLCNodeLam {"x", l1});
-//     auto a = std::make_shared<SLCNode>(INT, 1330);
-//     auto b = std::make_shared<SLCNode>(INT, 7);
-//     auto l2ApplyA = std::make_shared<SLCNode>(APP, SLCNodeApp {l2, a});
-//     auto expr = std::make_shared<SLCNode>(APP, SLCNodeApp {l2ApplyA, b});
-//     return expr;
-// }
