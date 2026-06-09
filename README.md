@@ -31,7 +31,7 @@ Then, use the `run.sh` script to build the compiler and run it.
 
 ```console
 # Basic usage
-$ ./run.sh fc        # This will both compile 'fc' and run it
+$ ./run.sh fc       # This will both compile 'fc' and run it
 
 # Run the functional compiler with arguments
 $ ./run.sh fc ./examples/ex01_basic.fc -d --ast
