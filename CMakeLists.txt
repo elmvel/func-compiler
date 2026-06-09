@@ -37,5 +37,3 @@ add_executable(fc src/compiler/main.cc
                   src/compiler/backend/elc_to_simple.cc)
 
 target_link_libraries(fc fmt::fmt)
-
-add_executable(runtime-probe src/runtime-probe/main.c)
