@@ -37,7 +37,7 @@ $ ./run.sh fc        # This will both compile 'fc' and run it
 $ ./run.sh fc ./examples/ex01_basic.fc -d --ast
 
 # Alternatively, the binary will be within the ./build/ dirrectory
-$  ./build/fc        # This will run the binary 'fc' directly
+$ ./build/fc        # This will run the binary 'fc' directly
 ```
 
 If the compiler was given a valid source file, then there will be an executable `f.out` in the working directory.
